@@ -1,81 +1,124 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
+  patientId: string;
   name: string;
   email: string;
   role: "PATIENT" | "DOCTOR" | "RESEARCHER" | "ADMIN";
   overallScore: number;
+  age?: number;
+  gender?: string;
+  bloodPressure?: string;
+  fastingGlucose?: number;
+  recordsCount?: number;
+  riskAlertsCount?: number;
 }
 
 interface AuthContextType {
   isLoggedIn: boolean;
   user: UserProfile | null;
-  login: (email?: string) => void;
+  login: (userData: Partial<UserProfile> | string) => void;
+  updateUser: (updates: Partial<UserProfile>) => void;
   logout: () => void;
 }
-
-const defaultUser: UserProfile = {
-  id: "pt_1029384",
-  name: "Alex Mercer",
-  email: "alex.mercer@example.com",
-  role: "PATIENT",
-  overallScore: 87,
-};
 
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   user: null,
   login: () => {},
+  updateUser: () => {},
   logout: () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
-  const pathname = usePathname();
   const router = useRouter();
 
-  // Read stored auth or detect dashboard routes
+  // Load actual user from localStorage on client mount
   useEffect(() => {
-    const storedAuth = localStorage.getItem("twinhealth_auth");
-    if (storedAuth === "true") {
-      setIsLoggedIn(true);
-      setUser(defaultUser);
-    } else if (
-      pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/digital-twin") ||
-      pathname.startsWith("/records") ||
-      pathname.startsWith("/predictions") ||
-      pathname.startsWith("/simulator") ||
-      pathname.startsWith("/assistant")
-    ) {
-      // If user directly navigated to an app page, keep them logged in
-      setIsLoggedIn(true);
-      setUser(defaultUser);
-      localStorage.setItem("twinhealth_auth", "true");
+    try {
+      const storedUser = localStorage.getItem("digitaltwin_user");
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        if (parsed && parsed.email) {
+          setUser(parsed);
+          setIsLoggedIn(true);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not parse stored session:", e);
     }
-  }, [pathname]);
+  }, []);
 
-  const login = (email = "alex.mercer@example.com") => {
+  const login = (userData: Partial<UserProfile> | string) => {
+    let profile: UserProfile;
+
+    if (typeof userData === "string") {
+      const email = userData.trim();
+      const derivedName = email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      profile = {
+        id: `usr_${Date.now()}`,
+        patientId: `pt_${Date.now().toString().slice(-6)}`,
+        name: derivedName || "Patient",
+        email,
+        role: "PATIENT",
+        overallScore: 85,
+        recordsCount: 0,
+        riskAlertsCount: 0,
+      };
+    } else {
+      profile = {
+        id: userData.id || `usr_${Date.now()}`,
+        patientId: userData.patientId || `pt_${Date.now().toString().slice(-6)}`,
+        name: userData.name || (userData.email ? userData.email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Patient"),
+        email: userData.email || "user@digitaltwin.health",
+        role: userData.role || "PATIENT",
+        overallScore: userData.overallScore || 85,
+        age: userData.age || 32,
+        gender: userData.gender || "Unspecified",
+        bloodPressure: userData.bloodPressure || "120/80",
+        fastingGlucose: userData.fastingGlucose || 95,
+        recordsCount: userData.recordsCount || 0,
+        riskAlertsCount: userData.riskAlertsCount || 0,
+      };
+    }
+
+    setUser(profile);
     setIsLoggedIn(true);
-    setUser({ ...defaultUser, email });
-    localStorage.setItem("twinhealth_auth", "true");
-    router.push("/dashboard");
+    try {
+      localStorage.setItem("digitaltwin_user", JSON.stringify(profile));
+    } catch (e) {
+      console.warn("Storage failed:", e);
+    }
+  };
+
+  const updateUser = (updates: Partial<UserProfile>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updates };
+      try {
+        localStorage.setItem("digitaltwin_user", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
   };
 
   const logout = () => {
     setIsLoggedIn(false);
     setUser(null);
-    localStorage.removeItem("twinhealth_auth");
+    try {
+      localStorage.removeItem("digitaltwin_user");
+    } catch (e) {}
     router.push("/");
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, login, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

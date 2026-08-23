@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, role = "PATIENT" } = await request.json();
 
     if (!email) {
       return NextResponse.json(
@@ -15,28 +15,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await connectToDatabase();
-    let user = await User.findOne({ email: email.toLowerCase() });
+    const sanitizedEmail = email.toLowerCase().trim();
+    const displayName = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const patientId = `pt_${Date.now()}`;
 
-    if (!user) {
-      // Auto-provision demo accounts if logging in for the first time
-      user = await User.create({
-        patientId: `pt_${Date.now()}`,
-        name: email.split("@")[0].replace(".", " "),
-        email: email.toLowerCase(),
-        password: password || "password123",
-        role: "PATIENT",
-      });
+    try {
+      const db = await connectToDatabase();
+      if (db) {
+        let user = await User.findOne({ email: sanitizedEmail });
+        if (!user) {
+          user = await User.create({
+            patientId,
+            name: displayName,
+            email: sanitizedEmail,
+            password: password || "password123",
+            role,
+          });
+        }
+
+        return NextResponse.json({
+          success: true,
+          source: "mongodb",
+          user: {
+            id: user._id,
+            patientId: user.patientId,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            overallScore: 87,
+          },
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn("MongoDB login fallback:", dbErr.message);
     }
 
     return NextResponse.json({
       success: true,
+      source: "fallback-session",
       user: {
-        id: user._id,
-        patientId: user.patientId,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        id: patientId,
+        patientId,
+        name: displayName,
+        email: sanitizedEmail,
+        role,
+        overallScore: 87,
       },
     });
   } catch (error: any) {

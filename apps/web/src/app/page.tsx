@@ -43,7 +43,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function HomePage() {
   const [selectedOrgan, setSelectedOrgan] = useState<OrganData | null>(null);
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
 
   // Interactive Live What-If Simulator Sandbox State
   const [cardioMinutes, setCardioMinutes] = useState(35);
@@ -92,9 +92,29 @@ export default function HomePage() {
   return (
     <div className="w-full space-y-16 sm:space-y-24 pb-20 transition-colors duration-300">
       
-      {/* 1. HERO SECTION (16:9 Widescreen Optimized) */}
+      {/* 1. HERO SECTION (16:9 Widescreen Optimized Platform Showcase) */}
       <section className="relative pt-4 sm:pt-6 pb-2">
         <div className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12">
+          
+          {/* If user is logged in, show quick personalized navigation banner */}
+          {isLoggedIn && (
+            <div className="mb-6 p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                <span className="text-xs sm:text-sm font-bold text-emerald-900 dark:text-emerald-300">
+                  Welcome back, {user?.name}! Your personalized Digital Twin is active.
+                </span>
+              </div>
+              <Link
+                href="/dashboard"
+                className="px-4 py-2 rounded-xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-xs flex items-center gap-1.5"
+              >
+                <span>Open My Dashboard</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center min-h-[580px] lg:min-h-[640px]">
             
             {/* Left Hero Column: Headline & Action Buttons (4 Cols) */}
@@ -111,7 +131,7 @@ export default function HomePage() {
               </div>
 
               <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg">
-                Your Digital Twin unifies your medical records, lifestyle data, and advanced AI to give you personalized insights and help you live a healthier life.
+                Your Digital Twin unifies medical records, continuous wearable telemetry, and predictive machine learning into a living 3D virtual patient to help you live a healthier, longer life.
               </p>
 
               {/* Action Buttons */}
@@ -121,7 +141,7 @@ export default function HomePage() {
                     href={isLoggedIn ? "/dashboard" : "/signup"}
                     className="px-7 py-4 rounded-2xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-sm shadow-sm transition-all flex items-center gap-2"
                   >
-                    <span>{isLoggedIn ? "Go to Dashboard" : "Get Started Free"}</span>
+                    <span>{isLoggedIn ? "Open Dashboard" : "Calibrate Your Twin"}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </motion.div>
@@ -140,7 +160,7 @@ export default function HomePage() {
               {/* Privacy Badge */}
               <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 pt-1">
                 <Lock className="w-3.5 h-3.5 text-slate-400" />
-                <span>Your data is encrypted and 100% private</span>
+                <span>Zero-knowledge encryption • 100% private & HIPAA compliant</span>
               </div>
             </div>
 
@@ -153,23 +173,23 @@ export default function HomePage() {
               />
             </div>
 
-            {/* Right Hero Column: Health Overview Card (3 Cols) */}
+            {/* Right Hero Column: Platform Overview & Telemetry Preview (3 Cols) */}
             <div className="lg:col-span-3">
               <div className="p-6 lg:p-7 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-sm space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Health Overview</h3>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Updated just now</p>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Continuous Telemetry</h3>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Platform Reference Architecture</p>
                   </div>
                   <button title="Overview Information" className="text-slate-400 hover:text-slate-600">
                     <Info className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Big Health Score Metric */}
+                {/* Benchmark Score Metric */}
                 <div className="space-y-2.5">
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">Health Score</span>
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">Baseline Health Index</span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-white">
                       87
@@ -185,52 +205,52 @@ export default function HomePage() {
                   {/* Status Indicator */}
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-400 pt-0.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-                    <span>Optimal</span>
+                    <span>Multi-Organ Homeostasis</span>
                   </div>
                 </div>
 
-                {/* Vitals Breakdown Table */}
+                {/* Multimodal Telemetry Features Breakdown */}
                 <div className="space-y-3.5 pt-3 border-t border-slate-100 dark:border-[#1c3328] text-xs">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                      <Footprints className="w-4 h-4 text-slate-400" />
-                      <span>Steps (Today)</span>
+                      <Heart className="w-4 h-4 text-rose-500" />
+                      <span>Cardiovascular Stream</span>
                     </div>
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">7,842</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">72 bpm • Sinus</span>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                      <Moon className="w-4 h-4 text-slate-400" />
-                      <span>Sleep (Last Night)</span>
+                      <Activity className="w-4 h-4 text-emerald-600" />
+                      <span>Metabolic Biomarkers</span>
+                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">98 mg/dL</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
+                      <Moon className="w-4 h-4 text-indigo-500" />
+                      <span>Circadian Recovery</span>
                     </div>
                     <span className="font-bold text-slate-900 dark:text-white text-sm">7h 23m</span>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                      <Heart className="w-4 h-4 text-rose-500" />
-                      <span>Heart Rate</span>
+                      <BrainCircuit className="w-4 h-4 text-sky-600" />
+                      <span>AI Predictive Models</span>
                     </div>
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">72 bpm</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                      <Smile className="w-4 h-4 text-emerald-600" />
-                      <span>Stress Level</span>
-                    </div>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">Low</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">Active (SHAP)</span>
                   </div>
                 </div>
 
                 {/* Bottom Action Link */}
                 <div className="pt-3 border-t border-slate-100 dark:border-[#1c3328]">
                   <Link
-                    href="/dashboard"
+                    href={isLoggedIn ? "/dashboard" : "/signup"}
                     className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white hover:text-emerald-700 transition-colors group"
                   >
-                    <span>View full dashboard</span>
+                    <span>{isLoggedIn ? "Open Full Dashboard" : "Start Your Free Twin Calibration"}</span>
                     <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </div>
@@ -241,85 +261,87 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. STAT SUMMARY ROW (5 Cards Across 16:9 Grid) */}
+      {/* 2. STAT SUMMARY ROW (Platform Core Metrics) */}
       <section className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
           
-          {/* Card 1: Reports Uploaded */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">24</span>
-                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Reports Uploaded</span>
-                <span className="text-[11px] text-slate-400 dark:text-slate-500 block">This month</span>
-              </div>
-            </div>
-            <Link href="/records" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
-              <span>View all</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          {/* Card 2: Health Score */}
+          {/* Card 1: 6 Core Systems */}
           <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
             <div className="flex items-start gap-4">
               <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <UserCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">6</span>
+                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Core Organ Systems</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 block">Real-time 3D models</span>
+              </div>
+            </div>
+            <Link href="/digital-twin" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
+              <span>Explore anatomy</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Card 2: 10-Yr Disease Models */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">87</span>
-                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Health Score</span>
+                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">0.88</span>
+                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Predictive ROC-AUC</span>
                 <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold block flex items-center gap-1 mt-0.5">
-                  <span>◆</span> Optimal
+                  <span>◆</span> SHAP Explained
                 </span>
               </div>
             </div>
-            <Link href="/dashboard" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
-              <span>View details</span>
+            <Link href="/predictions" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
+              <span>Inspect risk models</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {/* Card 3: Health Alerts */}
+          {/* Card 3: AI Medical OCR */}
           <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
             <div className="flex items-start gap-4">
               <div className="w-11 h-11 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5" />
+                <FileText className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">3</span>
-                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Health Alerts</span>
+                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">98%</span>
+                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Medical OCR Accuracy</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 block">LOINC standard extraction</span>
               </div>
             </div>
-            <Link href="/predictions" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
-              <span>View alerts</span>
+            <Link href="/records" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
+              <span>View record vault</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {/* Card 4: Upcoming Appointments */}
+          {/* Card 4: Clinician Governance */}
           <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
             <div className="flex items-start gap-4">
               <div className="w-11 h-11 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                <Calendar className="w-5 h-5" />
+                <Stethoscope className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">2</span>
-                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Upcoming Appointments</span>
+                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">FHIR</span>
+                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">EHR Interoperability</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 block">Physician signed plans</span>
               </div>
             </div>
-            <Link href="/dashboard" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
-              <span>View schedule</span>
+            <Link href="/doctor" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
+              <span>Doctor review studio</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {/* Card 5: Add New Quick Action */}
+          {/* Card 5: Start Free Calibration */}
           <Link
-            href="/records"
+            href={isLoggedIn ? "/dashboard" : "/signup"}
             className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:border-emerald-600/60 transition-all flex flex-col justify-between space-y-4 group"
           >
             <div className="flex items-start gap-4">
@@ -327,9 +349,11 @@ export default function HomePage() {
                 <Plus className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-base lg:text-lg font-bold text-slate-900 dark:text-white block">Add New</span>
+                <span className="text-base lg:text-lg font-bold text-slate-900 dark:text-white block">
+                  {isLoggedIn ? "Open Dashboard" : "Start Calibration"}
+                </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5 leading-snug">
-                  Upload reports, logs, or health data
+                  {isLoggedIn ? "View your living twin model" : "Free 2-minute profile setup"}
                 </span>
               </div>
             </div>
@@ -340,7 +364,6 @@ export default function HomePage() {
 
       {/* 3. EXPLORE PLATFORM SECTION (6 Feature Cards Grid) */}
       <section id="platform" className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12 pt-2 scroll-mt-24">
-        {/* Section Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white font-serif">
@@ -351,7 +374,7 @@ export default function HomePage() {
             </p>
           </div>
           <Link
-            href="/dashboard"
+            href={isLoggedIn ? "/dashboard" : "/signup"}
             className="text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-emerald-800 dark:hover:text-emerald-400 flex items-center gap-1"
           >
             <span>View all modules</span>
@@ -727,7 +750,7 @@ export default function HomePage() {
             </div>
             <h4 className="text-base font-bold text-slate-900 dark:text-white">Gemini XAI & Directives</h4>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Google Gemini 1.5 powers conversational reasoning with direct document citations, transparent SHAP charts, and clinician signed care plans.
+              Google Gemini 1.5 powers conversational reasoning with direct document citations, transparent SHAP curves, and clinician signed care plans.
             </p>
             <div className="pt-2 flex flex-wrap gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
               <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800">Gemini 1.5</span>

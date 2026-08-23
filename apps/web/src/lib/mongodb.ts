@@ -1,12 +1,7 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/twinhealth";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/digitaltwin";
 
-/**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially
- * during API Route usage.
- */
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -23,7 +18,7 @@ if (!global.mongooseCache) {
   global.mongooseCache = cached;
 }
 
-export async function connectToDatabase(): Promise<typeof mongoose> {
+export async function connectToDatabase(): Promise<typeof mongoose | null> {
   if (cached.conn) {
     return cached.conn;
   }
@@ -31,27 +26,27 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   if (!cached.promise) {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 2000,
+      connectTimeoutMS: 2000,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-      console.log("✅ Successfully connected to MongoDB Database: twinhealth");
+      console.log("✅ Successfully connected to MongoDB Database: digitaltwin");
       return mongooseInstance;
     }).catch((err) => {
-      console.warn("⚠️ MongoDB connection warning (will use resilient fallback if offline):", err.message);
+      console.warn("⚠️ MongoDB offline notice:", err.message);
       cached.promise = null;
-      throw err;
+      return null as any;
     });
   }
 
   try {
     cached.conn = await cached.promise;
+    return cached.conn;
   } catch (e) {
     cached.promise = null;
-    throw e;
+    return null;
   }
-
-  return cached.conn;
 }
 
 export default connectToDatabase;
