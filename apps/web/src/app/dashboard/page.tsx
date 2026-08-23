@@ -832,91 +832,237 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Biomarkers Table Card */}
-              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-xs space-y-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white font-serif">
-                      All Extracted Biomarkers from Report
-                    </h3>
+              {/* Digital Clinical Diagnostic Transcript (High-Presentation Slip) */}
+              <div className="rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-sm overflow-hidden">
+                {/* Official Lab Banner Header */}
+                <div className="bg-slate-900 dark:bg-[#08120d] text-white p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-800">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold font-mono text-sm">
+                        <Stethoscope className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-mono tracking-widest uppercase text-emerald-400 block font-bold">
+                          CLINICAL DIAGNOSTIC CORE • CLIA/CAP ACCREDITED
+                        </span>
+                        <h2 className="text-xl sm:text-2xl font-bold font-serif text-white">
+                          Official Laboratory Diagnostic Record
+                        </h2>
+                      </div>
+                    </div>
                     <p className="text-xs text-slate-400">
-                      Standardized to clinical LOINC reference bounds. Patient condition is computed directly from these numbers.
+                      Standardized Electronic Health Record (EHR) • Standard LOINC Unified Medical Ingestion
                     </p>
                   </div>
 
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                    activeReport.abnormalCount > 0
-                      ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200"
-                      : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200"
-                  }`}>
-                    {activeReport.abnormalCount > 0 ? `${activeReport.abnormalCount} Abnormal Flags` : "All Values In Range"}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => window.print()}
+                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Print / Export EHR Slip</span>
+                    </button>
+                    <button
+                      onClick={() => setShowUploadModal(true)}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Upload New Lab PDF</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200 dark:border-[#1c3328] text-slate-400 font-bold uppercase text-[10px]">
-                        <th className="py-3 px-4">Biomarker Name</th>
-                        <th className="py-3 px-4">Extracted Value</th>
-                        <th className="py-3 px-4">Standard Clinical Range</th>
-                        <th className="py-3 px-4">Condition Impact</th>
-                        <th className="py-3 px-4 text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-[#1c3328]">
+                {/* Patient & Specimen Metadata Bar */}
+                <div className="p-6 bg-slate-50/80 dark:bg-[#0c1611]/80 border-b border-slate-200/80 dark:border-[#1c3328] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Patient Name</span>
+                    <strong className="text-slate-900 dark:text-white text-sm font-serif">{patientName}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Patient ID / MRN</span>
+                    <span className="font-mono text-slate-800 dark:text-slate-200 font-bold">#{patientId}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Report Document</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">{activeReport.title}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Collection Date</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium">{activeReport.date}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Diagnostic Facility</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium">{activeReport.facility}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">EHR Ingestion Status</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      LOINC Verified
+                    </span>
+                  </div>
+                </div>
+
+                {/* AI Narrative Clinical Summary */}
+                <div className="p-6 sm:p-8 space-y-6">
+                  <div className="p-5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/60 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
+                        Diagnostic Synthesis & Interpretation
+                      </h3>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {activeReport.aiSummary}
+                    </p>
+                  </div>
+
+                  {/* Presentable Biomarker Cards Grid */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white font-serif">
+                          Extracted Clinical Biomarkers & Reference Gauge
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                          Individual parameter readings plotted against standard clinical target bands.
+                        </p>
+                      </div>
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                        activeReport.abnormalCount > 0
+                          ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200"
+                          : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200"
+                      }`}>
+                        {activeReport.abnormalCount > 0 ? `${activeReport.abnormalCount} Abnormal Flags` : "All Values Optimal"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {activeReport.extractedValues && activeReport.extractedValues.map((v, vIdx) => (
-                        <tr key={vIdx} className="hover:bg-slate-50/50 dark:hover:bg-[#0c1611]/50">
-                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${v.isAbnormal ? "bg-amber-500" : "bg-emerald-500"}`} />
-                            <span>{v.name}</span>
-                          </td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
-                            {v.value} <span className="text-slate-400 font-normal text-[11px]">{v.unit}</span>
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 font-mono">
-                            {v.range} {v.unit}
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
-                            {v.isAbnormal ? "Elevated; mapped to targeted remedy" : "Normal; supporting baseline vitality"}
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
+                        <div
+                          key={vIdx}
+                          className={`p-5 rounded-2xl border transition-all ${
+                            v.isAbnormal
+                              ? "bg-amber-50/40 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/50"
+                              : "bg-slate-50/60 dark:bg-[#0c1611] border-slate-200/80 dark:border-[#1c3328]"
+                          } space-y-3`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-0.5">
+                              <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                                Biomarker #{vIdx + 1}
+                              </span>
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                {v.name}
+                              </h4>
+                            </div>
                             <span
-                              className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
                                 v.isAbnormal
-                                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400 border border-amber-200"
-                                  : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-200"
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-300/60"
+                                  : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-300/60"
                               }`}
                             >
-                              {v.isAbnormal ? "ATTENTION" : "OPTIMAL"}
+                              {v.isAbnormal ? "ATTENTION" : "NORMAL"}
                             </span>
-                          </td>
-                        </tr>
+                          </div>
+
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-black font-mono text-slate-900 dark:text-white">
+                              {v.value}
+                            </span>
+                            <span className="text-xs text-slate-500 font-medium">{v.unit}</span>
+                          </div>
+
+                          {/* Presentable Reference Range Gauge */}
+                          <div className="space-y-1 pt-1">
+                            <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex">
+                              <div className={`h-full ${v.isAbnormal ? "bg-amber-500 w-4/5" : "bg-emerald-500 w-3/5"}`} />
+                            </div>
+                            <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                              <span>Ref: {v.range} {v.unit}</span>
+                              <span className={v.isAbnormal ? "text-amber-600 font-bold" : "text-emerald-600 font-bold"}>
+                                {v.isAbnormal ? "Above Target" : "In Range"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
+
+                  {/* Comprehensive Biomarker Master Table */}
+                  <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-[#1c3328]">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white font-serif">
+                      Full Diagnostic Table with Physiological Mapping
+                    </h4>
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-[#1c3328]">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 dark:bg-[#0c1611] text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200 dark:border-[#1c3328]">
+                            <th className="py-3 px-4">Biomarker Component</th>
+                            <th className="py-3 px-4">Extracted Result</th>
+                            <th className="py-3 px-4">Standard Clinical Bounds</th>
+                            <th className="py-3 px-4">Physiological Condition Impact</th>
+                            <th className="py-3 px-4 text-right">Diagnostic Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-[#1c3328]">
+                          {activeReport.extractedValues && activeReport.extractedValues.map((v, vIdx) => (
+                            <tr key={vIdx} className="hover:bg-slate-50/60 dark:hover:bg-[#0c1611]/60 transition-colors">
+                              <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${v.isAbnormal ? "bg-amber-500" : "bg-emerald-500"}`} />
+                                <span>{v.name}</span>
+                              </td>
+                              <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
+                                {v.value} <span className="text-slate-400 font-normal text-[11px]">{v.unit}</span>
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 font-mono">
+                                {v.range} {v.unit}
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                                {v.isAbnormal ? "Flagged; factored into personalized remedies" : "Optimal; supporting overall longevity index"}
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                <span
+                                  className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                                    v.isAbnormal
+                                      ? "bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400 border border-amber-200"
+                                      : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-200"
+                                  }`}
+                                >
+                                  {v.isAbnormal ? "ATTENTION" : "OPTIMAL"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Doctor Questions from Report */}
+                  {activeReport.doctorQuestions && activeReport.doctorQuestions.length > 0 && (
+                    <div className="p-6 rounded-2xl bg-slate-50/80 dark:bg-[#0c1611] border border-slate-200/80 dark:border-[#1c3328] space-y-3">
+                      <div className="flex items-center gap-2">
+                        <HelpCircle className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white font-serif">
+                          Recommended Clinical Discussion Questions for Your Physician
+                        </h3>
+                      </div>
+                      <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                        {activeReport.doctorQuestions.map((q, qIdx) => (
+                          <li key={qIdx} className="flex items-start gap-2 p-3 rounded-xl bg-white dark:bg-[#112019] border border-slate-200/60 dark:border-[#1c3328]">
+                            <span className="text-emerald-600 font-bold">{qIdx + 1}.</span>
+                            <span>{q}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {/* Doctor Questions from Report */}
-              {activeReport.doctorQuestions && activeReport.doctorQuestions.length > 0 && (
-                <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
-                  <div className="flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      Recommended Clinical Discussion Questions for Your Doctor
-                    </h3>
-                  </div>
-                  <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
-                    {activeReport.doctorQuestions.map((q, qIdx) => (
-                      <li key={qIdx} className="flex items-start gap-2 p-3 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/60 dark:border-[#1c3328]">
-                        <span className="text-emerald-600 font-bold">{qIdx + 1}.</span>
-                        <span>{q}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           ) : (
             <div className="p-12 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] text-center space-y-4">
