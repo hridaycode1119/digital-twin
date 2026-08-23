@@ -20,17 +20,15 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
-// Public navigation links (Visible before logging in)
+// Clean, minimal public navigation links (Before login)
 const publicNavLinks = [
   { name: "Home", href: "/" },
   { name: "Features", href: "/#platform" },
   { name: "How It Works", href: "/#how-it-works" },
-  { name: "Architecture", href: "/#architecture" },
-  { name: "Clinicians", href: "/#clinicians" },
-  { name: "FAQ", href: "/#faq" },
+  { name: "For Doctors", href: "/doctor" },
 ];
 
-// Authenticated navigation links (Visible ONLY after login)
+// Authenticated product tabs (Visible ONLY after login)
 const authAppNavLinks = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "3D Twin", href: "/digital-twin" },
@@ -48,7 +46,6 @@ export const Navbar: React.FC = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const { isLoggedIn, user, logout } = useAuth();
 
-  // Dynamic link set depending on authentication state
   const currentNavLinks = isLoggedIn ? authAppNavLinks : publicNavLinks;
 
   const handleLogout = () => {
@@ -75,8 +72,8 @@ export const Navbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Center Navigation Links (Public vs Authenticated) */}
-        <nav className="hidden lg:flex items-center gap-7 text-sm font-medium">
+        {/* Center Navigation Links (Clean & Non-cluttered) */}
+        <nav className="hidden lg:flex items-center gap-8 text-sm font-medium">
           {currentNavLinks.map((link) => {
             const isActive =
               link.href === "/"
@@ -114,9 +111,8 @@ export const Navbar: React.FC = () => {
           <ThemeToggle />
 
           {isLoggedIn ? (
-            /* Logged-In State with Notifications & User Dropdown */
+            /* Logged-In State with Notifications & User Profile Dropdown */
             <div className="flex items-center gap-3">
-              {/* Notification Bell */}
               <button
                 title="Notifications"
                 className="relative p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
@@ -127,7 +123,6 @@ export const Navbar: React.FC = () => {
                 </span>
               </button>
 
-              {/* User Profile Pill with Interactive Dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
@@ -138,7 +133,7 @@ export const Navbar: React.FC = () => {
                   </div>
                   <div className="text-left leading-tight">
                     <span className="block text-xs font-bold text-slate-900 dark:text-white">
-                      Hi, {user?.name?.split(" ")[0] || "Hriday"}
+                      {user?.name || "Patient"}
                     </span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-0.5">
                       View profile <ChevronDown className="w-3 h-3" />
@@ -146,7 +141,6 @@ export const Navbar: React.FC = () => {
                   </div>
                 </button>
 
-                {/* Profile Dropdown Menu */}
                 <AnimatePresence>
                   {profileDropdownOpen && (
                     <motion.div
@@ -162,7 +156,7 @@ export const Navbar: React.FC = () => {
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
                         <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-mono text-emerald-700 dark:text-emerald-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          ID: {user?.patientId || "pt_1029384"}
+                          ID: #{user?.patientId}
                         </div>
                       </div>
 
@@ -197,7 +191,7 @@ export const Navbar: React.FC = () => {
               </div>
             </div>
           ) : (
-            /* Logged-Out State */
+            /* Logged-Out Public State */
             <div className="flex items-center gap-2.5">
               <Link
                 href="/login"
@@ -216,7 +210,7 @@ export const Navbar: React.FC = () => {
           )}
         </div>
 
-        {/* Mobile Hamburger Button */}
+        {/* Mobile Menu Hamburger */}
         <div className="lg:hidden flex items-center gap-2">
           <ThemeToggle />
           <motion.button
@@ -230,7 +224,7 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div

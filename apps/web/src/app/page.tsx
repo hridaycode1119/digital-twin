@@ -68,16 +68,16 @@ export default function HomePage() {
 
   const faqs = [
     {
-      q: "How does the Digital Twin differ from a standard fitness tracker?",
-      a: "Traditional wearables only record superficial metrics (steps, heart rate). Digital Twin integrates clinical electronic health records, blood biomarker panels (LOINC standards), continuous glucose streams, and dynamic differential equation models to simulate actual internal organ physiological status and forecast multi-year disease probabilities.",
+      q: "What is Digital Twin?",
+      a: "Digital Twin is an AI-powered virtual patient platform. It synthesizes unstructured electronic health records, continuous wearable telemetry, and dynamic physiological models to generate a stateful 3D anatomical avatar and project longitudinal disease risks.",
     },
     {
       q: "Is my personal healthcare data private and HIPAA/DPDP compliant?",
-      a: "Yes. All data ingested into Digital Twin is encrypted both in transit (TLS 1.3) and at rest (AES-256) with zero-knowledge cryptographic keys. Your records are never used for third-party model training without explicit granular consent.",
+      a: "Yes. All data ingested into Digital Twin is encrypted both in transit (TLS 1.3) and at rest (AES-256) with zero-knowledge cryptographic keys. Your records are never shared or used for public model training.",
     },
     {
       q: "How accurate is the AI predictive disease forecasting?",
-      a: "Our models utilize state-of-the-art XGBoost and deep ensemble architectures validated on verified clinical cohorts (ROC-AUC 0.88 for 10-year Cardiovascular risk). Every prediction includes complete SHAP (Shapley Additive Explanations) transparency so you and your doctor see the exact biomarker drivers behind every score.",
+      a: "Our models utilize XGBoost and deep ensemble architectures validated on verified clinical cohorts (ROC-AUC 0.88 for 10-year Cardiovascular risk). Every prediction includes complete SHAP (Shapley Additive Explanations) transparency so you and your doctor understand the exact biomarker drivers.",
     },
     {
       q: "Can my doctor inspect and edit my digital twin?",
@@ -85,15 +85,15 @@ export default function HomePage() {
     },
     {
       q: "Which wearable devices and lab test formats are supported?",
-      a: "Digital Twin natively supports Apple HealthKit, Oura, Garmin, Dexcom CGM, and Fitbit, as well as unstructured PDF lab reports from major diagnostic centers (Quest, LabCorp, Metropolis, Dr. Lal PathLabs) via our AI Medical OCR parser.",
+      a: "Digital Twin natively supports Apple HealthKit, Oura, Garmin, Dexcom CGM, and Fitbit, as well as unstructured PDF lab reports from major diagnostic centers via our AI Medical OCR parser.",
     },
   ];
 
   return (
     <div className="w-full space-y-16 sm:space-y-24 pb-20 transition-colors duration-300">
       
-      {/* 1. HERO SECTION (16:9 Widescreen Optimized Platform Showcase) */}
-      <section className="relative pt-4 sm:pt-6 pb-2">
+      {/* 1. HERO SECTION (16:9 Widescreen Focused 3D Hologram - No Mock User Vitals Card) */}
+      <section className="relative pt-6 sm:pt-8 pb-4">
         <div className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12">
           
           {/* If user is logged in, show quick personalized navigation banner */}
@@ -115,12 +115,17 @@ export default function HomePage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center min-h-[580px] lg:min-h-[640px]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center min-h-[580px] lg:min-h-[660px]">
             
-            {/* Left Hero Column: Headline & Action Buttons (4 Cols) */}
-            <div className="lg:col-span-4 space-y-6 lg:space-y-8 z-10">
+            {/* Left Hero Column: Headline & Action Buttons (5 Cols) */}
+            <div className="lg:col-span-5 space-y-6 lg:space-y-8 z-10">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50/80 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-900/60 text-emerald-900 dark:text-emerald-300 text-xs font-semibold">
+                <Microscope className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                <span>AI-Powered Virtual Patient & Telemetry Platform</span>
+              </div>
+
               <div className="space-y-2">
-                <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-normal tracking-tight text-slate-900 dark:text-white leading-[1.12] font-serif">
+                <h1 className="text-4xl sm:text-5xl lg:text-[58px] font-normal tracking-tight text-slate-900 dark:text-white leading-[1.10] font-serif">
                   Understand your health.
                   <br />
                   Take control of your{" "}
@@ -131,7 +136,7 @@ export default function HomePage() {
               </div>
 
               <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg">
-                Your Digital Twin unifies medical records, continuous wearable telemetry, and predictive machine learning into a living 3D virtual patient to help you live a healthier, longer life.
+                Digital Twin synthesizes raw electronic health records, continuous wearable telemetry, and predictive machine learning into an interactive 3D virtual patient to help you prevent disease and optimize longevity.
               </p>
 
               {/* Action Buttons */}
@@ -139,9 +144,9 @@ export default function HomePage() {
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     href={isLoggedIn ? "/dashboard" : "/signup"}
-                    className="px-7 py-4 rounded-2xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-sm shadow-sm transition-all flex items-center gap-2"
+                    className="px-8 py-4 rounded-2xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-sm shadow-md transition-all flex items-center gap-2"
                   >
-                    <span>{isLoggedIn ? "Open Dashboard" : "Calibrate Your Twin"}</span>
+                    <span>{isLoggedIn ? "Open Dashboard" : "Start Free Calibration"}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </motion.div>
@@ -151,117 +156,45 @@ export default function HomePage() {
                     href="#platform"
                     className="px-6 py-4 rounded-2xl bg-white dark:bg-[#112019] border border-slate-200 dark:border-[#1c3328] text-slate-800 dark:text-slate-200 font-semibold text-sm shadow-2xs hover:bg-slate-50 dark:hover:bg-[#162921] transition-all flex items-center gap-2"
                   >
-                    <span>Explore Features</span>
+                    <span>Explore Platform</span>
                     <LayoutGrid className="w-4 h-4 opacity-60" />
                   </a>
                 </motion.div>
               </div>
 
-              {/* Privacy Badge */}
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 pt-1">
-                <Lock className="w-3.5 h-3.5 text-slate-400" />
-                <span>Zero-knowledge encryption • 100% private & HIPAA compliant</span>
+              {/* Trust Badges */}
+              <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200/60 dark:border-[#1c3328]">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  HIPAA & DPDP Compliant
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1.5">
+                  <BrainCircuit className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  SHAP Explainable ML
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1.5">
+                  <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  Zero-Knowledge Privacy
+                </span>
               </div>
             </div>
 
-            {/* Center Hero Column: 3D Anatomical Body with Flanking Badges (5 Cols) */}
-            <div className="lg:col-span-5 relative flex flex-col items-center justify-center min-h-[500px] lg:min-h-[640px]">
+            {/* Right Hero Column: Spacious 3D Anatomical Body with Flanking Badges (7 Cols) */}
+            <div className="lg:col-span-7 relative flex flex-col items-center justify-center min-h-[520px] lg:min-h-[660px]">
               <HumanBodyCanvas
                 onSelectOrgan={(organ) => setSelectedOrgan(organ)}
                 selectedOrganId={selectedOrgan?.id}
-                className="w-full"
+                className="w-full max-w-3xl"
               />
-            </div>
-
-            {/* Right Hero Column: Platform Overview & Telemetry Preview (3 Cols) */}
-            <div className="lg:col-span-3">
-              <div className="p-6 lg:p-7 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-sm space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Continuous Telemetry</h3>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Platform Reference Architecture</p>
-                  </div>
-                  <button title="Overview Information" className="text-slate-400 hover:text-slate-600">
-                    <Info className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Benchmark Score Metric */}
-                <div className="space-y-2.5">
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">Baseline Health Index</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-white">
-                      87
-                    </span>
-                    <span className="text-sm text-slate-400 font-medium">/100</span>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                    <div className="bg-[#1b4332] dark:bg-emerald-500 h-full rounded-full" style={{ width: "87%" }} />
-                  </div>
-
-                  {/* Status Indicator */}
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-400 pt-0.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-                    <span>Multi-Organ Homeostasis</span>
-                  </div>
-                </div>
-
-                {/* Multimodal Telemetry Features Breakdown */}
-                <div className="space-y-3.5 pt-3 border-t border-slate-100 dark:border-[#1c3328] text-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                      <Heart className="w-4 h-4 text-rose-500" />
-                      <span>Cardiovascular Stream</span>
-                    </div>
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">72 bpm • Sinus</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                      <Activity className="w-4 h-4 text-emerald-600" />
-                      <span>Metabolic Biomarkers</span>
-                    </div>
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">98 mg/dL</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                      <Moon className="w-4 h-4 text-indigo-500" />
-                      <span>Circadian Recovery</span>
-                    </div>
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">7h 23m</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                      <BrainCircuit className="w-4 h-4 text-sky-600" />
-                      <span>AI Predictive Models</span>
-                    </div>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">Active (SHAP)</span>
-                  </div>
-                </div>
-
-                {/* Bottom Action Link */}
-                <div className="pt-3 border-t border-slate-100 dark:border-[#1c3328]">
-                  <Link
-                    href={isLoggedIn ? "/dashboard" : "/signup"}
-                    className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white hover:text-emerald-700 transition-colors group"
-                  >
-                    <span>{isLoggedIn ? "Open Full Dashboard" : "Start Your Free Twin Calibration"}</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </div>
-              </div>
             </div>
 
           </div>
         </div>
       </section>
 
-      {/* 2. STAT SUMMARY ROW (Platform Core Metrics) */}
+      {/* 2. STAT SUMMARY ROW (Platform Core Capabilities) */}
       <section className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
           
@@ -762,8 +695,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 6. CLINICAL EVIDENCE, ACCURACY & ARCHITECTURE (#architecture) */}
-      <section id="architecture" className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12 scroll-mt-24">
+      {/* 6. CLINICAL EVIDENCE, ACCURACY & ARCHITECTURE */}
+      <section className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12">
         <div className="p-8 sm:p-12 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
@@ -829,69 +762,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 7. DOCTOR & CLINICIAN COLLABORATION PORTAL (#clinicians) */}
-      <section id="clinicians" className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12 scroll-mt-24">
-        <div className="p-8 sm:p-12 rounded-3xl bg-slate-900 text-white border border-slate-800 shadow-md">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
-            <div className="lg:col-span-7 space-y-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-800">
-                Healthcare Providers & Clinics
-              </span>
-              <h3 className="text-2xl sm:text-3xl font-extrabold font-serif">
-                Bridge Patient Telemetry with Clinical Decision Support
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Empower your practice with high-frequency longitudinal patient telemetry. Instead of reviewing fragmented yearly reports, inspect stateful digital twin models that highlight real biomarker trajectories and drug-lifestyle interactions.
-              </p>
-
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Link
-                  href="/doctor"
-                  className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-2"
-                >
-                  <Stethoscope className="w-4 h-4" />
-                  <span>Launch Doctor Review Studio</span>
-                </Link>
-                <Link
-                  href="/predictions"
-                  className="px-6 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all flex items-center gap-2"
-                >
-                  <BrainCircuit className="w-4 h-4" />
-                  <span>Inspect Risk Models</span>
-                </Link>
-              </div>
-            </div>
-
-            <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700">
-                <FileCheck2 className="w-5 h-5 text-emerald-400 mb-2" />
-                <h5 className="text-xs font-bold text-white">Physician Override</h5>
-                <p className="text-[11px] text-slate-400 mt-1">Full clinician governance over machine learning risk flags.</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700">
-                <Database className="w-5 h-5 text-emerald-400 mb-2" />
-                <h5 className="text-xs font-bold text-white">EHR Integration</h5>
-                <p className="text-[11px] text-slate-400 mt-1">Interoperable FHIR bundle exports for Epic and Cerner.</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700">
-                <TrendingUp className="w-5 h-5 text-emerald-400 mb-2" />
-                <h5 className="text-xs font-bold text-white">Longitudinal Trends</h5>
-                <p className="text-[11px] text-slate-400 mt-1">Continuous time-series tracking across multi-organ vitals.</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700">
-                <Zap className="w-5 h-5 text-emerald-400 mb-2" />
-                <h5 className="text-xs font-bold text-white">Early Interventions</h5>
-                <p className="text-[11px] text-slate-400 mt-1">Prevent acute emergencies before symptoms manifest.</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* 8. FREQUENTLY ASKED QUESTIONS (FAQ) ACCORDION (#faq) */}
-      <section id="faq" className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12 scroll-mt-24">
+      {/* 7. FREQUENTLY ASKED QUESTIONS (FAQ) ACCORDION */}
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
         <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
           <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
             Frequently Asked Questions
@@ -940,7 +812,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 9. GRAND CALL TO ACTION (CTA) */}
+      {/* 8. GRAND CALL TO ACTION (CTA) */}
       <section className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12">
         <div className="p-8 sm:p-14 rounded-3xl bg-gradient-to-r from-[#14382c] via-[#1b4332] to-[#14382c] text-white text-center space-y-6 shadow-xl border border-emerald-800 relative overflow-hidden">
           <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 mx-auto shadow-xs">
