@@ -228,6 +228,46 @@ export default function DashboardPage() {
           { name: "Blood Pressure", value: "126/82", unit: "mmHg", range: "< 120/80", isAbnormal: false },
           { name: "Serum Creatinine", value: 0.90, unit: "mg/dL", range: "0.6 - 1.2", isAbnormal: false },
         ];
+      } else if (fileName.includes("kidney") || fileName.includes("renal") || fileName.includes("urine")) {
+        extractedCategory = "Renal & Kidney Function Panel";
+        extractedGlucose = 95;
+        extractedSystolic = 124;
+        extractedDiastolic = 80;
+        extractedValues = [
+          { name: "Serum Creatinine", value: 0.98, unit: "mg/dL", range: "0.6 - 1.2", isAbnormal: false },
+          { name: "eGFR (Filtration)", value: 104, unit: "mL/min", range: "> 90", isAbnormal: false },
+          { name: "Blood Urea Nitrogen (BUN)", value: 15, unit: "mg/dL", range: "7 - 20", isAbnormal: false },
+          { name: "Serum Sodium", value: 140, unit: "mEq/L", range: "135 - 145", isAbnormal: false },
+          { name: "Serum Potassium", value: 4.3, unit: "mEq/L", range: "3.5 - 5.0", isAbnormal: false },
+          { name: "Blood Pressure", value: "124/80", unit: "mmHg", range: "< 120/80", isAbnormal: false },
+        ];
+      } else if (fileName.includes("liver") || fileName.includes("lft") || fileName.includes("hepatic")) {
+        extractedCategory = "Hepatic & Liver Function Test";
+        extractedGlucose = 96;
+        extractedSystolic = 120;
+        extractedDiastolic = 78;
+        extractedValues = [
+          { name: "ALT (Alanine Aminotransferase)", value: 24, unit: "U/L", range: "7 - 56", isAbnormal: false },
+          { name: "AST (Aspartate Aminotransferase)", value: 22, unit: "U/L", range: "10 - 40", isAbnormal: false },
+          { name: "Total Bilirubin", value: 0.7, unit: "mg/dL", range: "0.1 - 1.2", isAbnormal: false },
+          { name: "Serum Albumin", value: 4.4, unit: "g/dL", range: "3.5 - 5.5", isAbnormal: false },
+          { name: "Fasting Blood Glucose", value: 96, unit: "mg/dL", range: "70 - 99", isAbnormal: false },
+          { name: "Blood Pressure", value: "120/78", unit: "mmHg", range: "< 120/80", isAbnormal: false },
+        ];
+      } else if (fileName.includes("cardio") || fileName.includes("heart") || fileName.includes("ecg")) {
+        extractedCategory = "Cardiovascular Diagnostic Screen";
+        extractedSystolic = 128;
+        extractedDiastolic = 84;
+        extractedHr = 78;
+        extractedCholesterol = 198;
+        extractedValues = [
+          { name: "Blood Pressure (Systolic/Diastolic)", value: "128/84", unit: "mmHg", range: "< 120/80", isAbnormal: false },
+          { name: "Resting Heart Rate", value: 78, unit: "BPM", range: "60 - 80", isAbnormal: false },
+          { name: "Total Cholesterol", value: 198, unit: "mg/dL", range: "125 - 200", isAbnormal: false },
+          { name: "HDL Cholesterol", value: 52, unit: "mg/dL", range: "40 - 60", isAbnormal: false },
+          { name: "LDL Cholesterol", value: 114, unit: "mg/dL", range: "< 100", isAbnormal: true },
+          { name: "Fasting Blood Glucose", value: 95, unit: "mg/dL", range: "70 - 99", isAbnormal: false },
+        ];
       }
 
       // 1. Instantly update live parameters on the spot
@@ -253,6 +293,9 @@ export default function DashboardPage() {
       });
 
       setSelectedReportIndex(0);
+      setSaveSuccessNotice(true);
+      setTimeout(() => setSaveSuccessNotice(false), 3500);
+
       setUploadStep("COMPLETE");
       setTimeout(() => {
         setIsProcessingDoc(false);
