@@ -36,6 +36,8 @@ import {
   RotateCcw,
   Save,
   Moon,
+  Building,
+  HelpCircle,
 } from "lucide-react";
 import { OrganBadge } from "@/components/ui/OrganBadge";
 import { OrganData } from "@/types/twin";
@@ -58,8 +60,11 @@ import {
 
 export default function DashboardPage() {
   const [selectedOrgan, setSelectedOrgan] = useState<OrganData | null>(null);
-  const [activeTab, setActiveTab] = useState<"OVERVIEW" | "PREDICTIONS" | "REMEDIES">("OVERVIEW");
+  const [activeTab, setActiveTab] = useState<"OVERVIEW" | "REPORT_DATA" | "PREDICTIONS" | "REMEDIES">("OVERVIEW");
   const { user, twin, records, addRecord, syncManualParameters } = useAuth();
+
+  // Selected report index for detailed inspection
+  const [selectedReportIndex, setSelectedReportIndex] = useState(0);
 
   // Modals & Ingestion State
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -96,6 +101,9 @@ export default function DashboardPage() {
       if (user.smoking) setLiveSmoking(user.smoking);
     }
   }, [user]);
+
+  // Active report for inspection
+  const activeReport = records.length > 0 ? records[selectedReportIndex] || records[0] : null;
 
   // Dynamic Virtual User Object constructed for on-the-spot prediction & remedy recalculation
   const activeParams: Partial<UserProfile> = {
@@ -146,8 +154,6 @@ export default function DashboardPage() {
   const patientName = user?.name || "Patient";
   const patientId = user?.patientId || "pt_001";
   const overallScore = twin.overallScore;
-
-  const latestRecord = records.length > 0 ? records[0] : null;
 
   // Timeline data constructed purely from uploaded lab reports
   const timelineData = getBiomarkerTimelineFromRecords(records, {
@@ -240,9 +246,13 @@ export default function DashboardPage() {
         abnormalCount: extractedValues.filter((v) => v.isAbnormal).length,
         extractedValues,
         aiSummary: `AI Optical OCR parsed ${extractedValues.length} biomarkers from ${file.name}. Patient parameters, organ status, and future predictions updated instantly.`,
-        doctorQuestions: ["Are these extracted values consistent with expected clinical trends?"],
+        doctorQuestions: [
+          "Are current biomarker levels within expected physiological bounds?",
+          "What lifestyle modifications are suggested for flagged markers?",
+        ],
       });
 
+      setSelectedReportIndex(0);
       setUploadStep("COMPLETE");
       setTimeout(() => {
         setIsProcessingDoc(false);
@@ -268,8 +278,8 @@ export default function DashboardPage() {
             Welcome back, {patientName}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            {latestRecord
-              ? `Current condition derived from latest report: "${latestRecord.title}" (${latestRecord.date})`
+            {activeReport
+              ? `Current condition derived from report: "${activeReport.title}" (${activeReport.date})`
               : "Calibrated to your baseline clinical parameters. Upload lab reports to track progress."}
           </p>
         </div>
@@ -292,8 +302,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Navigation Tabs (Overview, AI Predictions, Remedies) */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 dark:bg-[#0c1611] rounded-2xl border border-slate-200/80 dark:border-[#1c3328] w-fit">
+      {/* Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100/80 dark:bg-[#0c1611] rounded-2xl border border-slate-200/80 dark:border-[#1c3328] w-fit">
         <button
           onClick={() => setActiveTab("OVERVIEW")}
           className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
@@ -304,6 +314,18 @@ export default function DashboardPage() {
         >
           <Activity className="w-3.5 h-3.5" />
           <span>Overview & Organ Health</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("REPORT_DATA")}
+          className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "REPORT_DATA"
+              ? "bg-[#1b4332] dark:bg-emerald-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Ingested Report Data & Summary ({records.length})</span>
         </button>
 
         <button
@@ -380,7 +402,6 @@ export default function DashboardPage() {
 
           {/* 5 Live Sliders Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Slider 1: Systolic BP */}
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
               <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                 <span className="flex items-center gap-1">
@@ -405,7 +426,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Slider 2: Fasting Glucose */}
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
               <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                 <span className="flex items-center gap-1">
@@ -430,7 +450,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Slider 3: Sleep Hours */}
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
               <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                 <span className="flex items-center gap-1">
@@ -455,7 +474,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Slider 4: Weekly Exercise */}
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
               <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                 <span className="flex items-center gap-1">
@@ -480,7 +498,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Slider 5: Stress Level */}
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
               <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                 <span className="flex items-center gap-1">
@@ -515,7 +532,6 @@ export default function DashboardPage() {
         <div className="space-y-8 animate-in fade-in duration-200">
           {/* Key Score & Vitals Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            {/* Overall Score */}
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-4 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Twin Vitality Index</span>
@@ -533,11 +549,10 @@ export default function DashboardPage() {
                 </div>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {latestRecord ? `Derived from ${latestRecord.title}` : "Baseline calibration active"}
+                {activeReport ? `Derived from ${activeReport.title}` : "Baseline calibration active"}
               </p>
             </div>
 
-            {/* Current Blood Pressure */}
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Blood Pressure</span>
@@ -554,7 +569,6 @@ export default function DashboardPage() {
               </span>
             </div>
 
-            {/* Current Fasting Glucose */}
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Fasting Blood Glucose</span>
@@ -568,7 +582,6 @@ export default function DashboardPage() {
               <span className="text-[11px] text-slate-500 dark:text-slate-400">Ref: 70 - 99 mg/dL</span>
             </div>
 
-            {/* Ingested Document Count */}
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Uploaded Lab Reports</span>
@@ -578,22 +591,24 @@ export default function DashboardPage() {
                 <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{records.length}</span>
                 <span className="text-xs text-slate-400 ml-1.5">PDFs Indexed</span>
               </div>
-              <Link href="/records" className="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
-                <span>{records.length > 0 ? "Manage reports vault" : "+ Upload your first PDF"}</span>
+              <button
+                onClick={() => setActiveTab("REPORT_DATA")}
+                className="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1 text-left"
+              >
+                <span>Inspect full report data & summary</span>
                 <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
+              </button>
             </div>
           </div>
 
           {/* 2-Column Main Section */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left: Organ System Status Grid (7 Cols) */}
             <div className="lg:col-span-7 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white font-serif">
                   {patientName}&apos;s Organ System Status
                 </h3>
-                <span className="text-xs text-slate-400">Derived from clinical lab biomarkers</span>
+                <span className="text-xs text-slate-400">Calculated strictly from report data</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -626,7 +641,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Right: Biomarker Timeline (Derived strictly from Uploaded Reports) (5 Cols) */}
             <div className="lg:col-span-5 p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-5 shadow-2xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -694,9 +708,12 @@ export default function DashboardPage() {
 
               <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>Source: Uploaded PDF Reports</span>
-                <Link href="/records" className="text-emerald-800 dark:text-emerald-400 font-bold hover:underline">
-                  Inspect records vault →
-                </Link>
+                <button
+                  onClick={() => setActiveTab("REPORT_DATA")}
+                  className="text-emerald-800 dark:text-emerald-400 font-bold hover:underline"
+                >
+                  View full report breakdown →
+                </button>
               </div>
             </div>
           </div>
@@ -704,11 +721,188 @@ export default function DashboardPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: AI FUTURE HEALTH PREDICTIONS (FROM CURRENT DATA) */}
+      {/* TAB 2: INGESTED REPORT DATA & SUMMARY BREAKDOWN */}
+      {/* ========================================================================= */}
+      {activeTab === "REPORT_DATA" && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {activeReport ? (
+            <div className="space-y-6">
+              {/* Report Header Card */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-[#1c3328] pb-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
+                        {activeReport.category}
+                      </span>
+                      <span className="text-xs font-mono text-slate-400">Status: {activeReport.status}</span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-serif">
+                      {activeReport.title}
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 pt-1">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                        Date: <strong>{activeReport.date}</strong>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Building className="w-3.5 h-3.5 text-emerald-600" />
+                        Facility: <strong>{activeReport.facility}</strong>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Extracted Biomarkers: <strong>{activeReport.extractedValues?.length || 0}</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Multi-report switch picker if user has multiple reports */}
+                  {records.length > 1 && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-500 block">Switch Historical Report:</label>
+                      <select
+                        value={selectedReportIndex}
+                        onChange={(e) => setSelectedReportIndex(Number(e.target.value))}
+                        className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#0c1611] text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                      >
+                        {records.map((r, idx) => (
+                          <option key={r.id} value={idx}>
+                            {r.title} ({r.date})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* AI Document Summary & Interpretation */}
+                <div className="p-5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/60 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
+                      AI Clinical Synthesis & Report Summary
+                    </h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                    {activeReport.aiSummary}
+                  </p>
+                </div>
+              </div>
+
+              {/* Biomarkers Table Card */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-xs space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white font-serif">
+                      All Extracted Biomarkers from Report
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Standardized to clinical LOINC reference bounds. Patient condition is computed directly from these numbers.
+                    </p>
+                  </div>
+
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                    activeReport.abnormalCount > 0
+                      ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200"
+                      : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200"
+                  }`}>
+                    {activeReport.abnormalCount > 0 ? `${activeReport.abnormalCount} Abnormal Flags` : "All Values In Range"}
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-[#1c3328] text-slate-400 font-bold uppercase text-[10px]">
+                        <th className="py-3 px-4">Biomarker Name</th>
+                        <th className="py-3 px-4">Extracted Value</th>
+                        <th className="py-3 px-4">Standard Clinical Range</th>
+                        <th className="py-3 px-4">Condition Impact</th>
+                        <th className="py-3 px-4 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-[#1c3328]">
+                      {activeReport.extractedValues && activeReport.extractedValues.map((v, vIdx) => (
+                        <tr key={vIdx} className="hover:bg-slate-50/50 dark:hover:bg-[#0c1611]/50">
+                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${v.isAbnormal ? "bg-amber-500" : "bg-emerald-500"}`} />
+                            <span>{v.name}</span>
+                          </td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
+                            {v.value} <span className="text-slate-400 font-normal text-[11px]">{v.unit}</span>
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 font-mono">
+                            {v.range} {v.unit}
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                            {v.isAbnormal ? "Elevated; mapped to targeted remedy" : "Normal; supporting baseline vitality"}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <span
+                              className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                                v.isAbnormal
+                                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400 border border-amber-200"
+                                  : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-200"
+                              }`}
+                            >
+                              {v.isAbnormal ? "ATTENTION" : "OPTIMAL"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Doctor Questions from Report */}
+              {activeReport.doctorQuestions && activeReport.doctorQuestions.length > 0 && (
+                <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Recommended Clinical Discussion Questions for Your Doctor
+                    </h3>
+                  </div>
+                  <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                    {activeReport.doctorQuestions.map((q, qIdx) => (
+                      <li key={qIdx} className="flex items-start gap-2 p-3 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/60 dark:border-[#1c3328]">
+                        <span className="text-emerald-600 font-bold">{qIdx + 1}.</span>
+                        <span>{q}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-12 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] text-center space-y-4">
+              <div className="w-16 h-16 rounded-3xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto">
+                <FileText className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white font-serif">
+                No Laboratory Reports Ingested Yet
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                Upload your blood tests, metabolic panels, or lipid profile PDFs to extract all biomarkers and calculate your exact physiological condition.
+              </p>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="px-6 py-3 rounded-2xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 text-white font-bold text-xs shadow-sm inline-flex items-center gap-2"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>Upload Lab PDF Now</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: AI FUTURE HEALTH PREDICTIONS (FROM CURRENT DATA) */}
       {/* ========================================================================= */}
       {activeTab === "PREDICTIONS" && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Prediction Summary Header Card */}
           <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-[#1c3328] pb-4">
               <div>
@@ -734,16 +928,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Trajectory Outlook Banner */}
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/60 dark:border-[#1c3328] text-xs leading-relaxed text-slate-700 dark:text-slate-300">
               <strong className="text-slate-900 dark:text-white block mb-1">Physiological Outlook:</strong>
               {predictions.trajectoryOutlook}
             </div>
           </div>
 
-          {/* 3 Core Predictive Risk Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Prediction 1: 10-Yr Cardiovascular Risk */}
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-4 shadow-2xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
@@ -776,7 +967,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Prediction 2: 5-Yr Type-2 Diabetes Risk */}
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-4 shadow-2xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
@@ -809,7 +999,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Prediction 3: 5-Yr Vascular Stiffness / Hypertension */}
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-4 shadow-2xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
@@ -839,7 +1028,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Breakdown of Risk vs Protective Biomarker Forces */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
               <h4 className="text-xs font-bold uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
@@ -873,7 +1061,7 @@ export default function DashboardPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: PERSONALIZED CLINICAL REMEDIES & ACTION PLAN */}
+      {/* TAB 4: PERSONALIZED CLINICAL REMEDIES & ACTION PLAN */}
       {/* ========================================================================= */}
       {activeTab === "REMEDIES" && (
         <div className="space-y-6 animate-in fade-in duration-200">
@@ -910,7 +1098,6 @@ export default function DashboardPage() {
                   <p className="text-xs text-slate-400 italic">{remedy.targetCondition}</p>
                 </div>
 
-                {/* Step-by-step action items */}
                 <div className="space-y-2">
                   <span className="text-xs font-bold uppercase text-slate-700 dark:text-slate-300">Action Protocol:</span>
                   <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
@@ -923,7 +1110,6 @@ export default function DashboardPage() {
                   </ul>
                 </div>
 
-                {/* Mechanism & Expected Outcome */}
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/60 dark:border-[#1c3328] space-y-1.5 text-[11px]">
                   <div>
                     <strong className="text-slate-800 dark:text-slate-200">Scientific Mechanism: </strong>
