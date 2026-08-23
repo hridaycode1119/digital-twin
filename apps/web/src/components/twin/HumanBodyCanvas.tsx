@@ -70,7 +70,6 @@ export const HumanBodyCanvas: React.FC<HumanBodyCanvasProps> = ({
     // 1. Scene Setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    // Adjusted camera distance for both mobile and desktop aspect ratios
     camera.position.set(0, 0.05, width < 500 ? 5.2 : 4.7);
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -80,7 +79,7 @@ export const HumanBodyCanvas: React.FC<HumanBodyCanvasProps> = ({
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     currentMount.appendChild(renderer.domElement);
 
-    // Controls with mobile touch support
+    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -247,11 +246,11 @@ export const HumanBodyCanvas: React.FC<HumanBodyCanvasProps> = ({
   }, [isRotating, isWireframe]);
 
   return (
-    <div className={`relative w-full flex flex-col items-center select-none ${className}`}>
-      {/* 3D Canvas Viewport */}
-      <div className="relative w-full h-[440px] sm:h-[500px] lg:h-[580px] overflow-hidden rounded-3xl">
-        {/* 3D Mount */}
-        <div ref={mountRef} className="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing touch-none" />
+    <div className={`relative w-full flex flex-col items-center select-none overflow-visible ${className}`}>
+      {/* 3D Canvas & Holographic Stage Viewport */}
+      <div className="relative w-full h-[460px] sm:h-[520px] lg:h-[580px] overflow-visible">
+        {/* 3D WebGL Mount */}
+        <div ref={mountRef} className="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing touch-none z-0" />
 
         {/* Loading Overlay */}
         {isLoading && (
@@ -262,12 +261,12 @@ export const HumanBodyCanvas: React.FC<HumanBodyCanvasProps> = ({
         )}
 
         {/* Radial Background Holographic Circle */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div className="w-[340px] h-[340px] sm:w-[440px] sm:h-[440px] rounded-full bg-gradient-to-tr from-sky-100/50 via-teal-50/70 to-blue-50/30 border border-sky-100/60 shadow-inner -z-10" />
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center -z-10">
+          <div className="w-[340px] h-[340px] sm:w-[440px] sm:h-[440px] rounded-full bg-gradient-to-tr from-sky-100/50 via-teal-50/70 to-blue-50/30 border border-sky-100/60 shadow-inner" />
         </div>
 
-        {/* Desktop/Tablet Floating Callouts (Hidden on ultra-small mobile, visible on sm and up) */}
-        <div className="hidden sm:block absolute inset-0 pointer-events-none">
+        {/* Desktop/Tablet Floating Callouts (Cleanly positioned, overflow-visible) */}
+        <div className="hidden sm:block absolute inset-0 pointer-events-none z-10 overflow-visible">
           {organsList.map((organ, index) => {
             const isSelected = selectedOrganId === organ.id;
             const isHovered = hoveredOrgan === organ.id;
@@ -299,7 +298,7 @@ export const HumanBodyCanvas: React.FC<HumanBodyCanvasProps> = ({
                   left: organ.screenPos.left,
                   transform: "translate(-50%, -50%)",
                 }}
-                className="absolute pointer-events-auto transition-all duration-300 z-10 scale-90 md:scale-100"
+                className="absolute pointer-events-auto transition-all duration-300 z-10 scale-90 lg:scale-100"
                 onMouseEnter={() => setHoveredOrgan(organ.id)}
                 onMouseLeave={() => setHoveredOrgan(null)}
               >
@@ -310,22 +309,22 @@ export const HumanBodyCanvas: React.FC<HumanBodyCanvasProps> = ({
                       isHovered || isSelected ? "opacity-100" : "opacity-40"
                     }`}
                     style={{
-                      [isRightSide ? "left" : "right"]: "-12px",
+                      [isRightSide ? "left" : "right"]: "-10px",
                       top: "50%",
                       transform: "translateY(-50%)",
                     }}
                   >
-                    <div className="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-sm animate-ping opacity-75 absolute inset-0" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-sky-600 shadow-sm relative" />
+                    <div className="w-2 h-2 rounded-full bg-sky-500 shadow-sm animate-ping opacity-75 absolute inset-0" />
+                    <div className="w-2 h-2 rounded-full bg-sky-600 shadow-sm relative" />
                   </div>
                 )}
 
                 {/* Organ Badge Card */}
                 <motion.button
-                  whileHover={{ scale: 1.06, y: -2 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.96 }}
                   onClick={() => onSelectOrgan?.(organ)}
-                  className={`flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl glass-card transition-shadow duration-300 shadow-md ${
+                  className={`flex items-center gap-2.5 px-3.5 py-2 rounded-2xl glass-card transition-shadow duration-300 shadow-md border border-white/90 ${
                     isSelected
                       ? "ring-2 ring-sky-500 shadow-glow-cyan bg-white"
                       : isHovered
@@ -333,14 +332,14 @@ export const HumanBodyCanvas: React.FC<HumanBodyCanvasProps> = ({
                       : "bg-white/95"
                   }`}
                 >
-                  <div className="p-1.5 sm:p-2 rounded-xl bg-slate-50 border border-slate-100 shadow-xs flex items-center justify-center shrink-0">
+                  <div className="p-1.5 rounded-xl bg-slate-50 border border-slate-100 shadow-xs flex items-center justify-center shrink-0">
                     {organIconMap[organ.id]}
                   </div>
-                  <div className="text-left whitespace-nowrap">
-                    <span className="block text-[11px] sm:text-xs font-bold text-slate-900 leading-tight">
+                  <div className="text-left whitespace-nowrap pr-1">
+                    <span className="block text-xs font-bold text-slate-900 leading-tight">
                       {organ.name}
                     </span>
-                    <OrganBadge status={organ.status} className="mt-0.5 scale-75 sm:scale-90 -ml-1" />
+                    <OrganBadge status={organ.status} className="mt-0.5 scale-85 -ml-1" />
                   </div>
                 </motion.button>
               </motion.div>

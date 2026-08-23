@@ -93,7 +93,7 @@ export default function HomePage() {
 
               {/* Editorial Subtitle */}
               <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal max-w-lg">
-                Your body generates millions of biochemical signals every day. TwinHealth synthesizes raw lab diagnostics, continuous wearable streams, and predictive ML into an interactive 3D virtual patient.
+                Your body generates millions of biochemical signals every day. Digital Twin synthesizes raw lab diagnostics, continuous wearable streams, and predictive ML into an interactive 3D virtual patient.
               </p>
 
               {/* CTA Buttons */}
@@ -491,7 +491,7 @@ export default function HomePage() {
                   Moving Healthcare from Reactive to Predictive & Preventive
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  TwinHealth is architected as an advanced Computer Science and AI Healthcare research prototype. By unifying electronic health records, diagnostic tests, and wearable telemetry into a stateful Digital Twin, it delivers explainable decision support for both patients and clinicians.
+                  Digital Twin is architected as an advanced Computer Science and AI Healthcare research prototype. By unifying electronic health records, diagnostic tests, and wearable telemetry into a stateful Digital Twin, it delivers explainable decision support for both patients and clinicians.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
                   <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">

@@ -26,7 +26,7 @@ export const initialPatientTwin: PatientTwinState = {
       riskLevel: "LOW",
       icon: "Brain",
       position: { x: 0, y: 1.6, z: 0 },
-      screenPos: { top: "14%", left: "20%" },
+      screenPos: { top: "18%", left: "24%" },
       metrics: [
         { name: "Cognitive Index", value: "94/100" },
         { name: "Avg Sleep", value: "7.4", unit: "hrs/night" },
@@ -53,7 +53,7 @@ export const initialPatientTwin: PatientTwinState = {
       riskLevel: "MODERATE",
       icon: "Heart",
       position: { x: 0.1, y: 0.8, z: 0.1 },
-      screenPos: { top: "18%", left: "82%" },
+      screenPos: { top: "20%", left: "76%" },
       metrics: [
         { name: "Resting Heart Rate", value: "74", unit: "BPM" },
         { name: "Blood Pressure", value: "128/82", unit: "mmHg", isAbnormal: true },
@@ -82,7 +82,7 @@ export const initialPatientTwin: PatientTwinState = {
       riskLevel: "LOW",
       icon: "Wind",
       position: { x: 0, y: 0.75, z: 0 },
-      screenPos: { top: "36%", left: "14%" },
+      screenPos: { top: "38%", left: "20%" },
       metrics: [
         { name: "SpO2 Oxygen Saturation", value: "99", unit: "%" },
         { name: "Respiratory Rate", value: "14", unit: "breaths/min" },
@@ -109,7 +109,7 @@ export const initialPatientTwin: PatientTwinState = {
       riskLevel: "LOW",
       icon: "ShieldAlert",
       position: { x: -0.2, y: 0.3, z: 0.1 },
-      screenPos: { top: "40%", left: "86%" },
+      screenPos: { top: "40%", left: "78%" },
       metrics: [
         { name: "ALT (Alanine Aminotransferase)", value: "22", unit: "U/L" },
         { name: "AST (Aspartate Aminotransferase)", value: "19", unit: "U/L" },
@@ -136,7 +136,7 @@ export const initialPatientTwin: PatientTwinState = {
       riskLevel: "LOW",
       icon: "Utensils",
       position: { x: 0.15, y: 0.35, z: 0.1 },
-      screenPos: { top: "58%", left: "18%" },
+      screenPos: { top: "58%", left: "22%" },
       metrics: [
         { name: "Digestive Index", value: "88/100" },
         { name: "Gut Microbiome Diversity", value: "High (Estimated)" },
@@ -163,7 +163,7 @@ export const initialPatientTwin: PatientTwinState = {
       riskLevel: "LOW",
       icon: "Activity",
       position: { x: 0, y: 0.1, z: -0.1 },
-      screenPos: { top: "62%", left: "82%" },
+      screenPos: { top: "60%", left: "76%" },
       metrics: [
         { name: "Serum Creatinine", value: "0.88", unit: "mg/dL" },
         { name: "eGFR (Glomerular Filtration)", value: "108", unit: "mL/min/1.73m²" },
