@@ -15,7 +15,7 @@ import {
   Stethoscope,
   FlaskConical,
   AlertCircle,
-  Sparkles,
+  Database,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -26,8 +26,8 @@ export default function LoginPage() {
   const { login } = useAuth();
 
   const [role, setRole] = useState<RoleType>("PATIENT");
-  const [email, setEmail] = useState("alex.mercer@example.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,33 +42,18 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role }),
+        body: JSON.stringify({ email: email.trim(), password, role }),
       });
 
       const data = await res.json();
-      if (data.success && data.user) {
+      if (res.ok && data.success && data.user) {
         login(data.user);
         router.push("/dashboard");
       } else {
-        // Mock fallback login for offline/client mode
-        login({
-          name: email.split("@")[0].replace(".", " "),
-          email,
-          role,
-          patientId: "pt_1029384",
-          overallScore: 87,
-        });
-        router.push("/dashboard");
+        setErrorMsg(data.error || "MongoDB authentication failed. Please verify your credentials.");
       }
     } catch (err: any) {
-      login({
-        name: email.split("@")[0].replace(".", " "),
-        email,
-        role,
-        patientId: "pt_1029384",
-        overallScore: 87,
-      });
-      router.push("/dashboard");
+      setErrorMsg(err.message || "Failed to communicate with MongoDB authentication server.");
     } finally {
       setIsLoading(false);
     }
@@ -101,7 +86,7 @@ export default function LoginPage() {
             Welcome back
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Access your personalized Digital Twin and continuous health telemetry.
+            Sign in to access your secure MongoDB Digital Twin account.
           </p>
         </div>
 
@@ -154,8 +139,8 @@ export default function LoginPage() {
           </div>
 
           {errorMsg && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -230,10 +215,10 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 rounded-xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 group mt-2"
+              className="w-full py-3 px-4 rounded-xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 group mt-2 disabled:opacity-50"
             >
               {isLoading ? (
-                <span>Authenticating...</span>
+                <span>Authenticating with MongoDB...</span>
               ) : (
                 <>
                   <span>Sign In as {role.charAt(0) + role.slice(1).toLowerCase()}</span>
@@ -254,8 +239,8 @@ export default function LoginPage() {
 
         {/* Security Badge */}
         <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>256-Bit Encrypted Session • HIPAA & DPDP Compliant</span>
+          <Database className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Authenticated via MongoDB • Zero Mock Fallbacks</span>
         </div>
       </div>
     </div>

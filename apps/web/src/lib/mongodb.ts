@@ -18,7 +18,7 @@ if (!global.mongooseCache) {
   global.mongooseCache = cached;
 }
 
-export async function connectToDatabase(): Promise<typeof mongoose | null> {
+export async function connectToDatabase(): Promise<typeof mongoose> {
   if (cached.conn) {
     return cached.conn;
   }
@@ -26,27 +26,25 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
   if (!cached.promise) {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 2000,
-      connectTimeoutMS: 2000,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-      console.log("✅ Successfully connected to MongoDB Database: digitaltwin");
-      return mongooseInstance;
-    }).catch((err) => {
-      console.warn("⚠️ MongoDB offline notice:", err.message);
-      cached.promise = null;
-      return null as any;
-    });
+    cached.promise = mongoose
+      .connect(MONGODB_URI, opts)
+      .then((mongooseInstance) => {
+        console.log("✅ Successfully connected to MongoDB Database: digitaltwin");
+        return mongooseInstance;
+      })
+      .catch((err) => {
+        console.error("❌ MongoDB connection error:", err.message);
+        cached.promise = null;
+        throw new Error(`MongoDB connection failed: ${err.message}`);
+      });
   }
 
-  try {
-    cached.conn = await cached.promise;
-    return cached.conn;
-  } catch (e) {
-    cached.promise = null;
-    return null;
-  }
+  cached.conn = await cached.promise;
+  return cached.conn;
 }
 
 export default connectToDatabase;

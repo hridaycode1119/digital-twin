@@ -1,70 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
+import { DigitalTwin } from "@/models/DigitalTwin";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, role = "PATIENT" } = await request.json();
+    const { email, password } = await request.json();
 
-    if (!email) {
+    if (!email || !password) {
       return NextResponse.json(
-        { success: false, error: "Email is required." },
+        { success: false, error: "Email and password are required." },
         { status: 400 }
       );
     }
 
     const sanitizedEmail = email.toLowerCase().trim();
-    const displayName = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const patientId = `pt_${Date.now()}`;
 
-    try {
-      const db = await connectToDatabase();
-      if (db) {
-        let user = await User.findOne({ email: sanitizedEmail });
-        if (!user) {
-          user = await User.create({
-            patientId,
-            name: displayName,
-            email: sanitizedEmail,
-            password: password || "password123",
-            role,
-          });
-        }
+    // Strictly connect to MongoDB
+    await connectToDatabase();
 
-        return NextResponse.json({
-          success: true,
-          source: "mongodb",
-          user: {
-            id: user._id,
-            patientId: user.patientId,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            overallScore: 87,
-          },
-        });
-      }
-    } catch (dbErr: any) {
-      console.warn("MongoDB login fallback:", dbErr.message);
+    const user = await User.findOne({ email: sanitizedEmail });
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No account found with this email in MongoDB. Please sign up first.",
+        },
+        { status: 401 }
+      );
     }
+
+    // Verify password if user has password set
+    if (user.password && user.password !== password) {
+      return NextResponse.json(
+        { success: false, error: "Invalid password. Please check your credentials." },
+        { status: 401 }
+      );
+    }
+
+    const twin = await DigitalTwin.findOne({ patientId: user.patientId });
 
     return NextResponse.json({
       success: true,
-      source: "fallback-session",
+      source: "mongodb",
       user: {
-        id: patientId,
-        patientId,
-        name: displayName,
-        email: sanitizedEmail,
-        role,
-        overallScore: 87,
+        id: user._id.toString(),
+        patientId: user.patientId,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        overallScore: twin?.overallScore || 88,
+        bloodPressure: twin?.vitals?.bloodPressure?.replace(" mmHg", "") || "120/80",
+        fastingGlucose: twin?.vitals?.glucose || 95,
+        heartRate: twin?.vitals?.heartRate || 72,
       },
     });
   } catch (error: any) {
+    console.error("MongoDB Login Error:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      {
+        success: false,
+        error: error.message || "MongoDB authentication failed. Database connection required.",
+      },
       { status: 500 }
     );
   }

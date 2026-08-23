@@ -16,6 +16,7 @@ import {
   Stethoscope,
   FlaskConical,
   AlertCircle,
+  Database,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -60,36 +61,22 @@ export default function SignupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: fullName || "New Patient",
-          email,
+          name: fullName.trim() || "New Patient",
+          email: email.trim(),
           password,
           role,
         }),
       });
 
       const data = await res.json();
-      if (data.success && data.user) {
+      if (res.ok && data.success && data.user) {
         login(data.user);
         router.push("/onboarding");
       } else {
-        login({
-          name: fullName || email.split("@")[0].replace(".", " "),
-          email,
-          role,
-          patientId: `pt_${Date.now()}`,
-          overallScore: 85,
-        });
-        router.push("/onboarding");
+        setErrorMsg(data.error || "MongoDB registration failed. Please try again.");
       }
     } catch (err: any) {
-      login({
-        name: fullName || email.split("@")[0].replace(".", " "),
-        email,
-        role,
-        patientId: `pt_${Date.now()}`,
-        overallScore: 85,
-      });
-      router.push("/onboarding");
+      setErrorMsg(err.message || "Failed to communicate with MongoDB registration server.");
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +97,7 @@ export default function SignupPage() {
             Create Your Account
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Initialize your virtual twin model and predictive wellness dashboard.
+            Initialize your persistent MongoDB digital twin profile.
           </p>
         </div>
 
@@ -163,8 +150,8 @@ export default function SignupPage() {
           </div>
 
           {errorMsg && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -290,7 +277,7 @@ export default function SignupPage() {
               className="w-full py-3 px-4 rounded-xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 dark:hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 group mt-2"
             >
               {isLoading ? (
-                <span>Creating Digital Twin Profile...</span>
+                <span>Registering to MongoDB...</span>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 text-emerald-300" />
@@ -312,8 +299,8 @@ export default function SignupPage() {
 
         {/* Security Badge */}
         <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Patient Identity Protection & Granular Consent</span>
+          <Database className="w-3.5 h-3.5 text-emerald-600" />
+          <span>MongoDB Persistent Identity • HIPAA & DPDP Compliant</span>
         </div>
       </div>
     </div>
