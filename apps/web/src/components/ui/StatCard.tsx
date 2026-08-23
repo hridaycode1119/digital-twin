@@ -23,8 +23,8 @@ interface StatCardProps {
 
 export const StatCard: React.FC<StatCardProps> = ({
   icon: Icon,
-  iconColor = "text-blue-600",
-  iconBg = "bg-blue-50",
+  iconColor = "text-sky-600",
+  iconBg = "bg-sky-50",
   value,
   label,
   subtext,
@@ -39,28 +39,28 @@ export const StatCard: React.FC<StatCardProps> = ({
 
   return (
     <motion.div
-      whileHover={{ y: -5, scale: 1.02 }}
+      whileHover={{ y: -4, scale: 1.01 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
       className={cn(
-        "rounded-3xl p-6 relative transition-shadow duration-300",
+        "rounded-3xl p-4.5 sm:p-6 relative transition-all duration-300",
         isDashed
-          ? "border-2 border-dashed border-slate-200/80 bg-white/40 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-white/60"
-          : "glass-card glass-card-hover flex flex-col justify-between hover:shadow-glow-blue",
+          ? "border-2 border-dashed border-slate-200/80 bg-white/40 flex flex-col items-center justify-center text-center hover:border-sky-400 hover:bg-white/60 min-h-[120px]"
+          : "glass-card glass-card-hover flex flex-col justify-between hover:shadow-glow-cyan",
         className
       )}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         <div
           className={cn(
-            "p-3.5 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110",
+            "p-2.5 sm:p-3.5 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-2xs",
             iconBg
           )}
         >
-          <Icon className={cn("w-6 h-6", iconColor)} />
+          <Icon className={cn("w-5 h-5 sm:w-6 sm:h-6", iconColor)} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+          <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               {typeof value === "number" ? (
                 <AnimatedCounter value={value} />
               ) : isNumber ? (
@@ -71,16 +71,16 @@ export const StatCard: React.FC<StatCardProps> = ({
             </span>
             {badge}
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-0.5">{label}</p>
-          {subtext && <p className="text-xs text-slate-400 mt-1">{subtext}</p>}
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5 leading-snug">{label}</p>
+          {subtext && <p className="text-[11px] text-slate-400 mt-0.5">{subtext}</p>}
         </div>
       </div>
 
       {actionText && actionHref && (
-        <div className="mt-4 pt-3 border-t border-slate-100/80 flex items-center justify-between">
+        <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100/80 flex items-center justify-between">
           <Link
             href={actionHref}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 group"
+            className="text-xs font-semibold text-sky-600 hover:text-sky-700 flex items-center gap-1 group"
           >
             {actionText}
             <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
