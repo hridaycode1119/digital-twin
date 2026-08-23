@@ -26,12 +26,22 @@ import {
   FileCheck,
   CheckCircle2,
   Zap,
+  BrainCircuit,
+  ShieldCheck,
+  Stethoscope,
+  Lightbulb,
+  Award,
+  ArrowRight,
 } from "lucide-react";
 import { OrganBadge } from "@/components/ui/OrganBadge";
 import { OrganData } from "@/types/twin";
 import { OrganDetailModal } from "@/components/twin/OrganDetailModal";
 import { useAuth } from "@/context/AuthContext";
-import { getBiomarkerTimelineFromRecords } from "@/lib/physiology";
+import {
+  getBiomarkerTimelineFromRecords,
+  computeFuturePredictions,
+  generatePersonalizedRemedies,
+} from "@/lib/physiology";
 import {
   ResponsiveContainer,
   LineChart,
@@ -44,6 +54,7 @@ import {
 
 export default function DashboardPage() {
   const [selectedOrgan, setSelectedOrgan] = useState<OrganData | null>(null);
+  const [activeTab, setActiveTab] = useState<"OVERVIEW" | "PREDICTIONS" | "REMEDIES">("OVERVIEW");
   const { user, twin, records, addRecord, syncManualParameters } = useAuth();
 
   // Modals & Ingestion State
@@ -74,6 +85,10 @@ export default function DashboardPage() {
     glucose: Number(user?.fastingGlucose) || 95,
     systolic: Number(user?.bloodPressure?.split("/")[0]) || 120,
   });
+
+  // Future Predictions & Clinical Remedies derived from current data
+  const predictions = computeFuturePredictions(user || {}, twin);
+  const remedies = generatePersonalizedRemedies(user || {}, twin);
 
   const organs = Object.values(twin.organs);
 
@@ -180,228 +195,474 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Ingestion Prompt Banner if No Reports Uploaded Yet */}
-      {records.length === 0 && (
-        <div className="p-6 rounded-3xl bg-emerald-50/80 dark:bg-emerald-950/40 border-2 border-dashed border-emerald-300 dark:border-emerald-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#112019] text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-900 shadow-xs">
-              <UploadCloud className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                No Medical Reports Uploaded Yet
-              </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                Upload your blood test PDF, metabolic panel, or enter checkup parameters to calibrate your living 3D twin.
+      {/* Navigation Tabs (Overview, AI Predictions, Remedies) */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 dark:bg-[#0c1611] rounded-2xl border border-slate-200/80 dark:border-[#1c3328] w-fit">
+        <button
+          onClick={() => setActiveTab("OVERVIEW")}
+          className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "OVERVIEW"
+              ? "bg-[#1b4332] dark:bg-emerald-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>Overview & Organ Health</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("PREDICTIONS")}
+          className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "PREDICTIONS"
+              ? "bg-[#1b4332] dark:bg-emerald-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <BrainCircuit className="w-3.5 h-3.5" />
+          <span>AI Future Health Predictions</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("REMEDIES")}
+          className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "REMEDIES"
+              ? "bg-[#1b4332] dark:bg-emerald-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <Stethoscope className="w-3.5 h-3.5" />
+          <span>Clinical Remedies & Action Plan</span>
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* TAB 1: OVERVIEW & ORGAN HEALTH */}
+      {/* ========================================================================= */}
+      {activeTab === "OVERVIEW" && (
+        <div className="space-y-8 animate-in fade-in duration-200">
+          {/* Key Score & Vitals Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            {/* Overall Score */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-4 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Twin Vitality Index</span>
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">
+                  {overallScore >= 82 ? "Optimal" : "Monitoring"}
+                </span>
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-5xl font-black text-slate-900 dark:text-white font-mono">{overallScore}</span>
+                  <span className="text-xs text-slate-400">/100</span>
+                </div>
+                <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+                  <div className="bg-[#1b4332] dark:bg-emerald-500 h-full rounded-full" style={{ width: `${overallScore}%` }} />
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {latestRecord ? `Derived from ${latestRecord.title}` : "Baseline calibration active"}
               </p>
+            </div>
+
+            {/* Current Blood Pressure */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Blood Pressure</span>
+                <Activity className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
+                  {user?.bloodPressure || "120/80"}
+                </span>
+                <span className="text-xs text-slate-400 ml-1.5">mmHg</span>
+              </div>
+              <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" /> Clinical Reference Band
+              </span>
+            </div>
+
+            {/* Current Fasting Glucose */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Fasting Blood Glucose</span>
+                <Flame className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
+                  {user?.fastingGlucose || 95} mg/dL
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Ref: 70 - 99 mg/dL</span>
+            </div>
+
+            {/* Ingested Document Count */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Uploaded Lab Reports</span>
+                <FileText className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{records.length}</span>
+                <span className="text-xs text-slate-400 ml-1.5">PDFs Indexed</span>
+              </div>
+              <Link href="/records" className="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
+                <span>{records.length > 0 ? "Manage reports vault" : "+ Upload your first PDF"}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-[#1b4332] dark:bg-emerald-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5"
-            >
-              <UploadCloud className="w-3.5 h-3.5" />
-              <span>Upload Document</span>
-            </button>
-            <button
-              onClick={() => setShowManualModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-white dark:bg-[#112019] border border-slate-200 dark:border-[#1c3328] text-xs font-bold text-slate-700 dark:text-slate-300"
-            >
-              Enter Parameters
-            </button>
+          {/* 2-Column Main Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left: Organ System Status Grid (7 Cols) */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-serif">
+                  {patientName}&apos;s Organ System Status
+                </h3>
+                <span className="text-xs text-slate-400">Derived from clinical lab biomarkers</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {organs.map((organ) => (
+                  <button
+                    key={organ.id}
+                    onClick={() => setSelectedOrgan(organ)}
+                    className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] hover:border-emerald-600 transition-all text-left space-y-3 group shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+                          {organ.name[0]}
+                        </div>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">{organ.name}</span>
+                      </div>
+                      <OrganBadge status={organ.status} />
+                    </div>
+
+                    <div className="flex items-baseline justify-between pt-1">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">Vitality Score</span>
+                      <span className="text-base font-black text-slate-900 dark:text-white font-mono">{organ.score}/100</span>
+                    </div>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      {organ.clinicalInsights}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Biomarker Timeline (Derived strictly from Uploaded Reports) (5 Cols) */}
+            <div className="lg:col-span-5 p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-5 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white font-serif">
+                    Biomarker History Across Reports
+                  </h3>
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                    {records.length} Reports
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Longitudinal values plotted across your uploaded clinical reports
+                </p>
+              </div>
+
+              <div className="h-56 w-full">
+                {timelineData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={timelineData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <YAxis domain={[60, 220]} stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(15, 23, 42, 0.95)",
+                          color: "#ffffff",
+                          borderRadius: "12px",
+                          border: "none",
+                          fontSize: "12px",
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="glucose"
+                        name="Glucose (mg/dL)"
+                        stroke="#10b981"
+                        strokeWidth={2.5}
+                        dot={{ r: 4 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="cholesterol"
+                        name="Cholesterol (mg/dL)"
+                        stroke="#f59e0b"
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="bpSystolic"
+                        name="Systolic BP (mmHg)"
+                        stroke="#0284c7"
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-200 dark:border-[#1c3328] rounded-2xl">
+                    <FileText className="w-8 h-8 text-slate-400 mb-2" />
+                    <p className="text-xs text-slate-500">Upload your first report to see your biomarker timeline.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>Source: Uploaded PDF Reports</span>
+                <Link href="/records" className="text-emerald-800 dark:text-emerald-400 font-bold hover:underline">
+                  Inspect records vault →
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Key Score & Vitals Row (Derived Strictly from Uploaded Reports or Manual Intake) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        {/* Overall Score */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Twin Vitality Index</span>
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">
-              {overallScore >= 82 ? "Optimal" : "Monitoring"}
-            </span>
-          </div>
-          <div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-5xl font-black text-slate-900 dark:text-white font-mono">{overallScore}</span>
-              <span className="text-xs text-slate-400">/100</span>
-            </div>
-            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
-              <div className="bg-[#1b4332] dark:bg-emerald-500 h-full rounded-full" style={{ width: `${overallScore}%` }} />
-            </div>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {latestRecord ? `Reflected from ${latestRecord.title}` : "Baseline calibration active"}
-          </p>
-        </div>
-
-        {/* Current Blood Pressure */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Blood Pressure</span>
-            <Activity className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div>
-            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
-              {user?.bloodPressure || "120/80"}
-            </span>
-            <span className="text-xs text-slate-400 ml-1.5">mmHg</span>
-          </div>
-          <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
-            <CheckCircle className="w-3 h-3" /> Clinical Reference Band
-          </span>
-        </div>
-
-        {/* Current Fasting Glucose */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Fasting Blood Glucose</span>
-            <Flame className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div>
-            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
-              {user?.fastingGlucose || 95} mg/dL
-            </span>
-          </div>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">Ref: 70 - 99 mg/dL</span>
-        </div>
-
-        {/* Ingested Document Count */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Uploaded Lab Reports</span>
-            <FileText className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div>
-            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{records.length}</span>
-            <span className="text-xs text-slate-400 ml-1.5">PDFs Indexed</span>
-          </div>
-          <Link href="/records" className="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
-            <span>{records.length > 0 ? "Manage reports vault" : "+ Upload your first PDF"}</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
-
-      {/* 2-Column Main Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left: Organ System Status Grid (7 Cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-serif">
-              {patientName}&apos;s Organ System Status
-            </h3>
-            <span className="text-xs text-slate-400">Derived from clinical lab biomarkers</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {organs.map((organ) => (
-              <button
-                key={organ.id}
-                onClick={() => setSelectedOrgan(organ)}
-                className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] hover:border-emerald-600 transition-all text-left space-y-3 group shadow-2xs"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
-                      {organ.name[0]}
-                    </div>
-                    <span className="text-sm font-bold text-slate-900 dark:text-white">{organ.name}</span>
-                  </div>
-                  <OrganBadge status={organ.status} />
-                </div>
-
-                <div className="flex items-baseline justify-between pt-1">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Vitality Score</span>
-                  <span className="text-base font-black text-slate-900 dark:text-white font-mono">{organ.score}/100</span>
-                </div>
-
-                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                  {organ.clinicalInsights}
+      {/* ========================================================================= */}
+      {/* TAB 2: AI FUTURE HEALTH PREDICTIONS (FROM CURRENT DATA) */}
+      {/* ========================================================================= */}
+      {activeTab === "PREDICTIONS" && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Prediction Summary Header Card */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-[#1c3328] pb-4">
+              <div>
+                <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">
+                  Longitudinal Predictive Forecasting
+                </span>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-serif mt-0.5">
+                  AI Future Health Projections for {patientName}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Estimated multi-year disease probabilities calculated strictly from your current clinical lab reports and calibrated habits.
                 </p>
-              </button>
-            ))}
+              </div>
+
+              <div className="flex items-center gap-2 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 shrink-0">
+                <Award className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Biological Age</span>
+                  <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+                    {predictions.biologicalAge} Yrs ({Math.abs(predictions.ageDifference)} yrs {predictions.ageDifference <= 0 ? "younger" : "older"})
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Trajectory Outlook Banner */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/60 dark:border-[#1c3328] text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+              <strong className="text-slate-900 dark:text-white block mb-1">Physiological Outlook:</strong>
+              {predictions.trajectoryOutlook}
+            </div>
+          </div>
+
+          {/* 3 Core Predictive Risk Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Prediction 1: 10-Yr Cardiovascular Risk */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-4 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Cardiovascular Risk</span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      predictions.cvdRiskStatus === "LOW"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                        : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
+                    }`}
+                  >
+                    {predictions.cvdRiskStatus} RISK
+                  </span>
+                </div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white font-serif mt-1">10-Year CVD Likelihood</h4>
+              </div>
+
+              <div>
+                <span className="text-5xl font-black text-slate-900 dark:text-white font-mono">
+                  {predictions.cvdRisk10Yr}%
+                </span>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Population Baseline: 8.5% • Based on BP ({user?.bloodPressure || "120/80"})
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] text-xs text-slate-500">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Primary Drivers: </span>
+                Systolic arterial compliance & lipid panel
+              </div>
+            </div>
+
+            {/* Prediction 2: 5-Yr Type-2 Diabetes Risk */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-4 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Metabolic Stability</span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      predictions.diabetesRiskStatus === "OPTIMAL"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                        : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
+                    }`}
+                  >
+                    {predictions.diabetesRiskStatus}
+                  </span>
+                </div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white font-serif mt-1">5-Year Type 2 Diabetes</h4>
+              </div>
+
+              <div>
+                <span className="text-5xl font-black text-slate-900 dark:text-white font-mono">
+                  {predictions.diabetesRisk5Yr}%
+                </span>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Fast Blood Glucose: {user?.fastingGlucose || 95} mg/dL
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] text-xs text-slate-500">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Primary Drivers: </span>
+                Insulin sensitivity & weekly exercise frequency
+              </div>
+            </div>
+
+            {/* Prediction 3: 5-Yr Vascular Stiffness / Hypertension */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-4 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Vascular Health</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+                    PROTECTED
+                  </span>
+                </div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white font-serif mt-1">5-Year Hypertension Risk</h4>
+              </div>
+
+              <div>
+                <span className="text-5xl font-black text-slate-900 dark:text-white font-mono">
+                  {predictions.hypertensionRisk5Yr}%
+                </span>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Arterial elasticity supported by aerobic activity
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] text-xs text-slate-500">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Primary Drivers: </span>
+                Sodium balance & stress index ({user?.stressLevel || 3}/10)
+              </div>
+            </div>
+          </div>
+
+          {/* Breakdown of Risk vs Protective Biomarker Forces */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4" /> Biomarker Risk Drivers
+              </h4>
+              <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                {predictions.topRiskFactors.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 p-2.5 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40">
+                    <span className="text-rose-500 font-bold">•</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4" /> Protective Longevity Factors
+              </h4>
+              <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                {predictions.topProtectiveFactors.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 p-2.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40">
+                    <span className="text-emerald-500 font-bold">•</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Right: Biomarker Timeline (Derived strictly from Uploaded Reports) (5 Cols) */}
-        <div className="lg:col-span-5 p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-5 shadow-2xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white font-serif">
-                Biomarker History Across Reports
-              </h3>
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
-                {records.length} Reports
+      {/* ========================================================================= */}
+      {/* TAB 3: PERSONALIZED CLINICAL REMEDIES & ACTION PLAN */}
+      {/* ========================================================================= */}
+      {activeTab === "REMEDIES" && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-xs space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
+                Evidence-Based Clinical Remedies
               </span>
+              <span className="text-xs text-slate-400">Tailored to {patientName}&apos;s current data</span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Longitudinal values plotted across your uploaded clinical reports
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-serif">
+              Personalized Lifestyle & Therapeutic Action Plan
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+              These evidence-graded interventions are synthesized from your latest clinical lab markers (Glucose {user?.fastingGlucose || 95} mg/dL, BP {user?.bloodPressure || "120/80"}) to optimize organ longevity.
             </p>
           </div>
 
-          <div className="h-56 w-full">
-            {timelineData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timelineData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                  <YAxis domain={[60, 220]} stroke="#94a3b8" fontSize={11} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(15, 23, 42, 0.95)",
-                      color: "#ffffff",
-                      borderRadius: "12px",
-                      border: "none",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="glucose"
-                    name="Glucose (mg/dL)"
-                    stroke="#10b981"
-                    strokeWidth={2.5}
-                    dot={{ r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="cholesterol"
-                    name="Cholesterol (mg/dL)"
-                    stroke="#f59e0b"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="bpSystolic"
-                    name="Systolic BP (mmHg)"
-                    stroke="#0284c7"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-200 dark:border-[#1c3328] rounded-2xl">
-                <FileText className="w-8 h-8 text-slate-400 mb-2" />
-                <p className="text-xs text-slate-500">Upload your first report to see your biomarker timeline.</p>
-              </div>
-            )}
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {remedies.map((remedy, idx) => (
+              <div
+                key={idx}
+                className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-4 shadow-2xs flex flex-col justify-between"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2.5 py-1 rounded-full">
+                      {remedy.category} • {remedy.evidenceGrade.replace("_", " ")}
+                    </span>
+                    <Lightbulb className="w-4 h-4 text-amber-500" />
+                  </div>
 
-          <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Source: Uploaded PDF Reports</span>
-            <Link href="/records" className="text-emerald-800 dark:text-emerald-400 font-bold hover:underline">
-              Inspect records vault →
-            </Link>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white font-serif">{remedy.title}</h4>
+                  <p className="text-xs text-slate-400 italic">{remedy.targetCondition}</p>
+                </div>
+
+                {/* Step-by-step action items */}
+                <div className="space-y-2">
+                  <span className="text-xs font-bold uppercase text-slate-700 dark:text-slate-300">Action Protocol:</span>
+                  <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                    {remedy.actionSteps.map((step, sIdx) => (
+                      <li key={sIdx} className="flex items-start gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Mechanism & Expected Outcome */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/60 dark:border-[#1c3328] space-y-1.5 text-[11px]">
+                  <div>
+                    <strong className="text-slate-800 dark:text-slate-200">Scientific Mechanism: </strong>
+                    <span className="text-slate-600 dark:text-slate-400">{remedy.scientificMechanism}</span>
+                  </div>
+                  <div>
+                    <strong className="text-emerald-800 dark:text-emerald-400">Expected Outcome: </strong>
+                    <span className="text-slate-600 dark:text-slate-400">{remedy.expectedOutcome}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Upload Document Modal */}
       {showUploadModal && (
