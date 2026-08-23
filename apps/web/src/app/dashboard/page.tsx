@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -32,11 +32,15 @@ import {
   Lightbulb,
   Award,
   ArrowRight,
+  Sliders,
+  RotateCcw,
+  Save,
+  Moon,
 } from "lucide-react";
 import { OrganBadge } from "@/components/ui/OrganBadge";
 import { OrganData } from "@/types/twin";
 import { OrganDetailModal } from "@/components/twin/OrganDetailModal";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, UserProfile } from "@/context/AuthContext";
 import {
   getBiomarkerTimelineFromRecords,
   computeFuturePredictions,
@@ -65,14 +69,79 @@ export default function DashboardPage() {
   const [uploadStep, setUploadStep] = useState<"IDLE" | "PROCESSING" | "COMPLETE">("IDLE");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Manual Parameters Form State
-  const [bpInput, setBpInput] = useState(user?.bloodPressure || "120/80");
-  const [glucoseInput, setGlucoseInput] = useState(user?.fastingGlucose ? String(user.fastingGlucose) : "95");
-  const [hrInput, setHrInput] = useState(user?.heartRate ? String(user.heartRate) : "72");
-  const [sleepInput, setSleepInput] = useState(user?.sleepHours ? String(user.sleepHours) : "7.5");
-  const [exerciseInput, setExerciseInput] = useState(user?.exerciseDays ? String(user.exerciseDays) : "4");
-  const [stressInput, setStressInput] = useState(user?.stressLevel ? String(user.stressLevel) : "3");
-  const [dietInput, setDietInput] = useState(user?.dietType || "Balanced / Mediterranean");
+  // Live On-The-Spot Parameter State (Allows instantaneous live tuning on the spot)
+  const [liveSystolic, setLiveSystolic] = useState(120);
+  const [liveDiastolic, setLiveDiastolic] = useState(80);
+  const [liveGlucose, setLiveGlucose] = useState(95);
+  const [liveHr, setLiveHr] = useState(72);
+  const [liveSleep, setLiveSleep] = useState(7.5);
+  const [liveExercise, setLiveExercise] = useState(3);
+  const [liveStress, setLiveStress] = useState(3);
+  const [liveSmoking, setLiveSmoking] = useState("Never");
+  const [saveSuccessNotice, setSaveSuccessNotice] = useState(false);
+
+  // Sync state with user profile on initial load or user change
+  useEffect(() => {
+    if (user) {
+      if (user.bloodPressure) {
+        const parts = user.bloodPressure.split("/");
+        setLiveSystolic(Number(parts[0]) || 120);
+        setLiveDiastolic(Number(parts[1]) || 80);
+      }
+      if (user.fastingGlucose) setLiveGlucose(Number(user.fastingGlucose));
+      if (user.heartRate) setLiveHr(Number(user.heartRate));
+      if (user.sleepHours) setLiveSleep(Number(user.sleepHours));
+      if (user.exerciseDays) setLiveExercise(Number(user.exerciseDays));
+      if (user.stressLevel) setLiveStress(Number(user.stressLevel));
+      if (user.smoking) setLiveSmoking(user.smoking);
+    }
+  }, [user]);
+
+  // Dynamic Virtual User Object constructed for on-the-spot prediction & remedy recalculation
+  const activeParams: Partial<UserProfile> = {
+    ...user,
+    bloodPressure: `${liveSystolic}/${liveDiastolic}`,
+    fastingGlucose: liveGlucose,
+    heartRate: liveHr,
+    sleepHours: liveSleep,
+    exerciseDays: liveExercise,
+    stressLevel: liveStress,
+    smoking: liveSmoking,
+  };
+
+  // Instantaneous on-the-spot recalculations
+  const predictions = computeFuturePredictions(activeParams, twin);
+  const remedies = generatePersonalizedRemedies(activeParams, twin);
+
+  // Handle saving tuned parameters to user account
+  const handleSaveTunedParameters = () => {
+    syncManualParameters({
+      bloodPressure: `${liveSystolic}/${liveDiastolic}`,
+      fastingGlucose: liveGlucose,
+      heartRate: liveHr,
+      sleepHours: liveSleep,
+      exerciseDays: liveExercise,
+      stressLevel: liveStress,
+      smoking: liveSmoking,
+    });
+    setSaveSuccessNotice(true);
+    setTimeout(() => setSaveSuccessNotice(false), 2500);
+  };
+
+  const handleResetToBaseline = () => {
+    if (user) {
+      if (user.bloodPressure) {
+        const parts = user.bloodPressure.split("/");
+        setLiveSystolic(Number(parts[0]) || 120);
+        setLiveDiastolic(Number(parts[1]) || 80);
+      }
+      setLiveGlucose(Number(user.fastingGlucose) || 95);
+      setLiveHr(Number(user.heartRate) || 72);
+      setLiveSleep(Number(user.sleepHours) || 7.5);
+      setLiveExercise(Number(user.exerciseDays) || 3);
+      setLiveStress(Number(user.stressLevel) || 3);
+    }
+  };
 
   const patientName = user?.name || "Patient";
   const patientId = user?.patientId || "pt_001";
@@ -82,13 +151,9 @@ export default function DashboardPage() {
 
   // Timeline data constructed purely from uploaded lab reports
   const timelineData = getBiomarkerTimelineFromRecords(records, {
-    glucose: Number(user?.fastingGlucose) || 95,
-    systolic: Number(user?.bloodPressure?.split("/")[0]) || 120,
+    glucose: liveGlucose,
+    systolic: liveSystolic,
   });
-
-  // Future Predictions & Clinical Remedies derived from current data
-  const predictions = computeFuturePredictions(user || {}, twin);
-  const remedies = generatePersonalizedRemedies(user || {}, twin);
 
   const organs = Object.values(twin.organs);
 
@@ -139,21 +204,6 @@ export default function DashboardPage() {
         setShowUploadModal(false);
       }, 700);
     }, 1000);
-  };
-
-  // Handle Manual Parameters Intake
-  const handleSaveManualParameters = (e: React.FormEvent) => {
-    e.preventDefault();
-    syncManualParameters({
-      bloodPressure: bpInput,
-      fastingGlucose: Number(glucoseInput) || 95,
-      heartRate: Number(hrInput) || 72,
-      sleepHours: Number(sleepInput) || 7.5,
-      exerciseDays: Number(exerciseInput) || 4,
-      stressLevel: Number(stressInput) || 3,
-      dietType: dietInput,
-    });
-    setShowManualModal(false);
   };
 
   return (
@@ -235,6 +285,183 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================================= */}
+      {/* LIVE PARAMETER TUNER BANNER (Available across tabs for on-the-spot testing) */}
+      {/* ========================================================================= */}
+      {(activeTab === "PREDICTIONS" || activeTab === "REMEDIES") && (
+        <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-[#1c3328] pb-3">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
+                <Sliders className="w-4 h-4" />
+              </span>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Interactive Live Parameter Tuner
+                </h4>
+                <p className="text-xs text-slate-400">
+                  Drag any slider below to see predictions and remedies recalculate <strong className="text-emerald-700 dark:text-emerald-400">on the spot</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetToBaseline}
+                className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-[#1c3328] text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTunedParameters}
+                className="px-4 py-1.5 rounded-xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Save to Profile</span>
+              </button>
+            </div>
+          </div>
+
+          {saveSuccessNotice && (
+            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Tuned parameters saved to your baseline profile successfully!</span>
+            </div>
+          )}
+
+          {/* 5 Live Sliders Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Slider 1: Systolic BP */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
+              <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                <span className="flex items-center gap-1">
+                  <Activity className="w-3.5 h-3.5 text-emerald-600" />
+                  Blood Pressure
+                </span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-mono font-black">{liveSystolic}/{liveDiastolic}</span>
+              </div>
+              <input
+                type="range"
+                min="95"
+                max="175"
+                step="1"
+                value={liveSystolic}
+                onChange={(e) => setLiveSystolic(Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#1b4332] dark:accent-emerald-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>95 (Low)</span>
+                <span>120 (Normal)</span>
+                <span>175 (High)</span>
+              </div>
+            </div>
+
+            {/* Slider 2: Fasting Glucose */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
+              <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                <span className="flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 text-amber-500" />
+                  Fasting Glucose
+                </span>
+                <span className="text-amber-600 dark:text-amber-400 font-mono font-black">{liveGlucose} mg/dL</span>
+              </div>
+              <input
+                type="range"
+                min="70"
+                max="190"
+                step="1"
+                value={liveGlucose}
+                onChange={(e) => setLiveGlucose(Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#1b4332] dark:accent-emerald-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>70 (Optimal)</span>
+                <span>99 (Borderline)</span>
+                <span>190 (High)</span>
+              </div>
+            </div>
+
+            {/* Slider 3: Sleep Hours */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
+              <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                <span className="flex items-center gap-1">
+                  <Moon className="w-3.5 h-3.5 text-indigo-500" />
+                  Sleep Duration
+                </span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-mono font-black">{liveSleep} hrs</span>
+              </div>
+              <input
+                type="range"
+                min="4"
+                max="10"
+                step="0.5"
+                value={liveSleep}
+                onChange={(e) => setLiveSleep(Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#1b4332] dark:accent-emerald-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>4h (Deprived)</span>
+                <span>7.5h (Target)</span>
+                <span>10h</span>
+              </div>
+            </div>
+
+            {/* Slider 4: Weekly Exercise */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
+              <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                <span className="flex items-center gap-1">
+                  <Heart className="w-3.5 h-3.5 text-rose-500" />
+                  Exercise Days
+                </span>
+                <span className="text-rose-600 dark:text-rose-400 font-mono font-black">{liveExercise} d/wk</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="7"
+                step="1"
+                value={liveExercise}
+                onChange={(e) => setLiveExercise(Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#1b4332] dark:accent-emerald-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>0 (Sedentary)</span>
+                <span>3 (Moderate)</span>
+                <span>7 (Athletic)</span>
+              </div>
+            </div>
+
+            {/* Slider 5: Stress Level */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] space-y-1.5">
+              <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                <span className="flex items-center gap-1">
+                  <Brain className="w-3.5 h-3.5 text-purple-500" />
+                  Stress Index
+                </span>
+                <span className="text-purple-600 dark:text-purple-400 font-mono font-black">{liveStress}/10</span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                step="1"
+                value={liveStress}
+                onChange={(e) => setLiveStress(Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#1b4332] dark:accent-emerald-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>1 (Calm)</span>
+                <span>5 (Normal)</span>
+                <span>10 (High)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* TAB 1: OVERVIEW & ORGAN HEALTH */}
       {/* ========================================================================= */}
       {activeTab === "OVERVIEW" && (
@@ -271,7 +498,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
-                  {user?.bloodPressure || "120/80"}
+                  {liveSystolic}/{liveDiastolic}
                 </span>
                 <span className="text-xs text-slate-400 ml-1.5">mmHg</span>
               </div>
@@ -288,7 +515,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
-                  {user?.fastingGlucose || 95} mg/dL
+                  {liveGlucose} mg/dL
                 </span>
               </div>
               <span className="text-[11px] text-slate-500 dark:text-slate-400">Ref: 70 - 99 mg/dL</span>
@@ -445,15 +672,15 @@ export default function DashboardPage() {
                   AI Future Health Projections for {patientName}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Estimated multi-year disease probabilities calculated strictly from your current clinical lab reports and calibrated habits.
+                  Estimated multi-year disease probabilities calculated on the spot from BP ({liveSystolic}/{liveDiastolic}), Glucose ({liveGlucose} mg/dL), Sleep ({liveSleep}h), and Exercise ({liveExercise}d).
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 shrink-0">
-                <Award className="w-5 h-5 text-emerald-600" />
+              <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 shrink-0">
+                <Award className="w-6 h-6 text-emerald-600" />
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Biological Age</span>
-                  <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Projected Biological Age</span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white font-mono">
                     {predictions.biologicalAge} Yrs ({Math.abs(predictions.ageDifference)} yrs {predictions.ageDifference <= 0 ? "younger" : "older"})
                   </span>
                 </div>
@@ -476,9 +703,9 @@ export default function DashboardPage() {
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Cardiovascular Risk</span>
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      predictions.cvdRiskStatus === "LOW"
+                      predictions.cvdRiskStatus === "OPTIMAL" || predictions.cvdRiskStatus === "LOW"
                         ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
-                        : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
+                        : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400"
                     }`}
                   >
                     {predictions.cvdRiskStatus} RISK
@@ -492,13 +719,13 @@ export default function DashboardPage() {
                   {predictions.cvdRisk10Yr}%
                 </span>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Population Baseline: 8.5% • Based on BP ({user?.bloodPressure || "120/80"})
+                  Population Baseline: 8.5% • Based on BP ({liveSystolic}/{liveDiastolic})
                 </p>
               </div>
 
               <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] text-xs text-slate-500">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Primary Drivers: </span>
-                Systolic arterial compliance & lipid panel
+                Systolic arterial compliance & resting pulse ({liveHr} BPM)
               </div>
             </div>
 
@@ -525,13 +752,13 @@ export default function DashboardPage() {
                   {predictions.diabetesRisk5Yr}%
                 </span>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Fast Blood Glucose: {user?.fastingGlucose || 95} mg/dL
+                  Fasting Blood Glucose: {liveGlucose} mg/dL
                 </p>
               </div>
 
               <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] text-xs text-slate-500">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Primary Drivers: </span>
-                Insulin sensitivity & weekly exercise frequency
+                Insulin sensitivity & weekly exercise frequency ({liveExercise}d/wk)
               </div>
             </div>
 
@@ -540,8 +767,10 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Vascular Health</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
-                    PROTECTED
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    liveSystolic <= 120 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400"
+                  }`}>
+                    {liveSystolic <= 120 ? "PROTECTED" : "MONITORING"}
                   </span>
                 </div>
                 <h4 className="text-base font-bold text-slate-900 dark:text-white font-serif mt-1">5-Year Hypertension Risk</h4>
@@ -552,13 +781,13 @@ export default function DashboardPage() {
                   {predictions.hypertensionRisk5Yr}%
                 </span>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Arterial elasticity supported by aerobic activity
+                  Arterial elasticity supported by {liveExercise} weekly workout days
                 </p>
               </div>
 
               <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] text-xs text-slate-500">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Primary Drivers: </span>
-                Sodium balance & stress index ({user?.stressLevel || 3}/10)
+                Sodium balance & stress index ({liveStress}/10)
               </div>
             </div>
           </div>
@@ -567,7 +796,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
               <h4 className="text-xs font-bold uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4" /> Biomarker Risk Drivers
+                <AlertTriangle className="w-4 h-4" /> Biomarker Risk Drivers (Live)
               </h4>
               <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
                 {predictions.topRiskFactors.map((f, i) => (
@@ -581,7 +810,7 @@ export default function DashboardPage() {
 
             <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
               <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4" /> Protective Longevity Factors
+                <ShieldCheck className="w-4 h-4" /> Protective Longevity Factors (Live)
               </h4>
               <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
                 {predictions.topProtectiveFactors.map((f, i) => (
@@ -606,13 +835,13 @@ export default function DashboardPage() {
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
                 Evidence-Based Clinical Remedies
               </span>
-              <span className="text-xs text-slate-400">Tailored to {patientName}&apos;s current data</span>
+              <span className="text-xs text-slate-400">Tailored on the spot to {patientName}&apos;s current data</span>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-serif">
               Personalized Lifestyle & Therapeutic Action Plan
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-              These evidence-graded interventions are synthesized from your latest clinical lab markers (Glucose {user?.fastingGlucose || 95} mg/dL, BP {user?.bloodPressure || "120/80"}) to optimize organ longevity.
+              These evidence-graded clinical remedies update dynamically based on your current blood pressure ({liveSystolic}/{liveDiastolic} mmHg), glucose ({liveGlucose} mg/dL), sleep ({liveSleep}h), and stress index ({liveStress}/10).
             </p>
           </div>
 
@@ -778,18 +1007,31 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveManualParameters} className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                syncManualParameters({
+                  bloodPressure: `${liveSystolic}/${liveDiastolic}`,
+                  fastingGlucose: liveGlucose,
+                  heartRate: liveHr,
+                  sleepHours: liveSleep,
+                  exerciseDays: liveExercise,
+                  stressLevel: liveStress,
+                });
+                setShowManualModal(false);
+              }}
+              className="space-y-4"
+            >
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Blood Pressure (mmHg)
+                    Systolic BP (mmHg)
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     required
-                    placeholder="e.g. 120/80"
-                    value={bpInput}
-                    onChange={(e) => setBpInput(e.target.value)}
+                    value={liveSystolic}
+                    onChange={(e) => setLiveSystolic(Number(e.target.value))}
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#0c1611] text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                   />
                 </div>
@@ -800,8 +1042,8 @@ export default function DashboardPage() {
                   <input
                     type="number"
                     required
-                    value={glucoseInput}
-                    onChange={(e) => setGlucoseInput(e.target.value)}
+                    value={liveGlucose}
+                    onChange={(e) => setLiveGlucose(Number(e.target.value))}
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#0c1611] text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                   />
                 </div>
@@ -815,8 +1057,8 @@ export default function DashboardPage() {
                   <input
                     type="number"
                     required
-                    value={hrInput}
-                    onChange={(e) => setHrInput(e.target.value)}
+                    value={liveHr}
+                    onChange={(e) => setLiveHr(Number(e.target.value))}
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#0c1611] text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                   />
                 </div>
@@ -827,8 +1069,8 @@ export default function DashboardPage() {
                   <input
                     type="number"
                     step="0.5"
-                    value={sleepInput}
-                    onChange={(e) => setSleepInput(e.target.value)}
+                    value={liveSleep}
+                    onChange={(e) => setLiveSleep(Number(e.target.value))}
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#0c1611] text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                   />
                 </div>
@@ -843,8 +1085,8 @@ export default function DashboardPage() {
                     type="number"
                     min="0"
                     max="7"
-                    value={exerciseInput}
-                    onChange={(e) => setExerciseInput(e.target.value)}
+                    value={liveExercise}
+                    onChange={(e) => setLiveExercise(Number(e.target.value))}
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#0c1611] text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                   />
                 </div>
@@ -856,8 +1098,8 @@ export default function DashboardPage() {
                     type="number"
                     min="1"
                     max="10"
-                    value={stressInput}
-                    onChange={(e) => setStressInput(e.target.value)}
+                    value={liveStress}
+                    onChange={(e) => setLiveStress(Number(e.target.value))}
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#0c1611] text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                   />
                 </div>

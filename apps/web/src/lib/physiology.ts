@@ -12,7 +12,7 @@ export function generatePersonalizedTwin(
 ): PatientTwinState {
   const name = user.name || "Patient";
   const patientId = user.patientId || `pt_${Date.now().toString().slice(-6)}`;
-  const age = Number(user.age) || 28;
+  const age = Number(user.age) || 26;
   const gender = (user.gender as any) || "Male";
 
   let systolic = 120;
@@ -22,9 +22,9 @@ export function generatePersonalizedTwin(
   let cholesterol = 185;
 
   if (user.bloodPressure) {
-    const [s, d] = user.bloodPressure.split("/");
-    systolic = Number(s) || 120;
-    diastolic = Number(d) || 80;
+    const parts = user.bloodPressure.split("/");
+    systolic = Number(parts[0]) || 120;
+    diastolic = Number(parts[1]) || 80;
   }
 
   if (latestRecord && latestRecord.extractedValues) {
@@ -47,46 +47,47 @@ export function generatePersonalizedTwin(
   const stress = Number(user.stressLevel) || 3;
   const diet = user.dietType || "Balanced / Mediterranean";
 
-  // 1. Heart
-  let heartScore = 92;
-  if (systolic > 130) heartScore -= 8;
-  else if (systolic > 120) heartScore -= 3;
-  if (cholesterol > 200) heartScore -= 6;
-  if (exerciseDays >= 4) heartScore += 5;
-  if (smoking === "Daily Smoker") heartScore -= 12;
-  heartScore = Math.min(99, Math.max(50, heartScore));
+  // 1. Heart Score
+  let heartScore = 95 - Math.max(0, (systolic - 118) * 0.5) - Math.max(0, (diastolic - 78) * 0.4);
+  if (cholesterol > 200) heartScore -= (cholesterol - 200) * 0.15;
+  if (heartRate > 80) heartScore -= (heartRate - 80) * 0.25;
+  if (exerciseDays >= 3) heartScore += exerciseDays * 1.5;
+  if (smoking === "Daily Smoker") heartScore -= 15;
+  heartScore = Math.round(Math.min(99, Math.max(40, heartScore)));
 
-  // 2. Lungs
-  let lungsScore = 95;
-  if (smoking === "Daily Smoker") lungsScore -= 25;
-  else if (smoking === "Occasional") lungsScore -= 10;
-  else if (smoking === "Former Smoker") lungsScore -= 4;
+  // 2. Lungs Score
+  let lungsScore = 96;
+  if (smoking === "Daily Smoker") lungsScore -= 28;
+  else if (smoking === "Occasional") lungsScore -= 12;
+  else if (smoking === "Former Smoker") lungsScore -= 5;
   if (exerciseDays >= 3) lungsScore += 3;
-  lungsScore = Math.min(99, Math.max(45, lungsScore));
+  lungsScore = Math.round(Math.min(99, Math.max(40, lungsScore)));
 
-  // 3. Brain
-  let brainScore = 90;
-  if (sleepHours < 6.5) brainScore -= 10;
-  else if (sleepHours >= 7.5) brainScore += 5;
-  if (stress > 6) brainScore -= 8;
-  brainScore = Math.min(99, Math.max(50, brainScore));
+  // 3. Brain & Sleep Score
+  let brainScore = 92;
+  if (sleepHours < 7.0) brainScore -= (7.0 - sleepHours) * 8;
+  else if (sleepHours >= 7.5 && sleepHours <= 9.0) brainScore += 4;
+  if (stress > 4) brainScore -= (stress - 4) * 3.5;
+  brainScore = Math.round(Math.min(99, Math.max(40, brainScore)));
 
-  // 4. Liver / Metabolism
-  let liverScore = 93;
-  if (glucose > 100) liverScore -= 7;
+  // 4. Liver & Metabolism Score
+  let liverScore = 94;
+  if (glucose > 99) liverScore -= (glucose - 99) * 0.45;
   if (cholesterol > 200) liverScore -= 5;
-  liverScore = Math.min(99, Math.max(55, liverScore));
+  if (exerciseDays < 2) liverScore -= 4;
+  liverScore = Math.round(Math.min(99, Math.max(40, liverScore)));
 
-  // 5. Kidneys
-  let kidneysScore = 94;
-  if (systolic > 130) kidneysScore -= 7;
-  if (age > 50) kidneysScore -= 5;
-  kidneysScore = Math.min(99, Math.max(55, kidneysScore));
+  // 5. Kidneys Score
+  let kidneysScore = 95;
+  if (systolic > 125) kidneysScore -= (systolic - 125) * 0.35;
+  if (age > 45) kidneysScore -= (age - 45) * 0.25;
+  kidneysScore = Math.round(Math.min(99, Math.max(40, kidneysScore)));
 
-  // 6. Stomach / Digestion
-  let stomachScore = 92;
-  if (stress > 6) stomachScore -= 6;
-  stomachScore = Math.min(99, Math.max(55, stomachScore));
+  // 6. Stomach / Digestion Score
+  let stomachScore = 93;
+  if (stress > 5) stomachScore -= (stress - 5) * 3;
+  if (diet.toLowerCase().includes("processed")) stomachScore -= 10;
+  stomachScore = Math.round(Math.min(99, Math.max(40, stomachScore)));
 
   const overallScore = Math.round(
     heartScore * 0.25 +
@@ -110,10 +111,10 @@ export function generatePersonalizedTwin(
       score: heartScore,
       status: getStatus(heartScore),
       meshColor: heartScore >= 82 ? "#10b981" : heartScore >= 68 ? "#f59e0b" : "#ef4444",
-      clinicalInsights: `Systolic ${systolic} mmHg, Total Cholesterol ${cholesterol} mg/dL. ${
+      clinicalInsights: `Systolic ${systolic} mmHg, Diastolic ${diastolic} mmHg, Heart Rate ${heartRate} bpm. ${
         heartScore >= 82
           ? "Normal cardiovascular status per uploaded diagnostic panels."
-          : "Elevated biomarker flags detected on report; follow physician recommendations."
+          : "Elevated biomarker flags detected; follow targeted cardio remedies."
       }`,
       biomarkers: [
         { name: "Blood Pressure", value: `${systolic}/${diastolic}`, unit: "mmHg", status: systolic <= 120 ? "NORMAL" : "ELEVATED", referenceRange: "< 120/80" },
@@ -164,7 +165,7 @@ export function generatePersonalizedTwin(
       score: kidneysScore,
       status: getStatus(kidneysScore),
       meshColor: kidneysScore >= 82 ? "#10b981" : kidneysScore >= 68 ? "#f59e0b" : "#ef4444",
-      clinicalInsights: "Renal filtration and fluid markers in optimal clinical range.",
+      clinicalInsights: `Blood pressure ${systolic}/${diastolic} mmHg. Renal filtration capacity calibrated.`,
       biomarkers: [
         { name: "Renal Filtration Index", value: "Optimal", unit: "", status: "NORMAL", referenceRange: "Normal" },
       ],
@@ -176,7 +177,7 @@ export function generatePersonalizedTwin(
       score: stomachScore,
       status: getStatus(stomachScore),
       meshColor: stomachScore >= 82 ? "#10b981" : stomachScore >= 68 ? "#f59e0b" : "#ef4444",
-      clinicalInsights: `Diet regimen: ${diet}. Healthy digestive status.`,
+      clinicalInsights: `Diet regimen: ${diet}. Stress index ${stress}/10.`,
       biomarkers: [
         { name: "Digestive Balance", value: "Balanced", unit: "", status: "NORMAL", referenceRange: "Normal" },
       ],
@@ -250,9 +251,9 @@ export function getBiomarkerTimelineFromRecords(
 
 export interface FutureHealthPrediction {
   cvdRisk10Yr: number;
-  cvdRiskStatus: "LOW" | "MODERATE" | "HIGH";
+  cvdRiskStatus: "OPTIMAL" | "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
   diabetesRisk5Yr: number;
-  diabetesRiskStatus: "OPTIMAL" | "BORDERLINE" | "ELEVATED";
+  diabetesRiskStatus: "OPTIMAL" | "BORDERLINE" | "ELEVATED" | "HIGH";
   hypertensionRisk5Yr: number;
   biologicalAge: number;
   chronologicalAge: number;
@@ -263,61 +264,118 @@ export interface FutureHealthPrediction {
 }
 
 /**
- * Computes AI Future Health Predictions strictly from the user's current data.
+ * Computes AI Future Health Predictions on the spot strictly from the passed parameters.
  */
-export function computeFuturePredictions(user: Partial<UserProfile>, twin: PatientTwinState): FutureHealthPrediction {
-  const chronoAge = Number(user.age) || 28;
-  const systolic = Number(user.bloodPressure?.split("/")[0]) || 120;
+export function computeFuturePredictions(
+  user: Partial<UserProfile>,
+  twin?: PatientTwinState
+): FutureHealthPrediction {
+  const chronoAge = Number(user.age) || 26;
+  let systolic = 120;
+  let diastolic = 80;
+  if (user.bloodPressure) {
+    const parts = user.bloodPressure.split("/");
+    systolic = Number(parts[0]) || 120;
+    diastolic = Number(parts[1]) || 80;
+  }
   const glucose = Number(user.fastingGlucose) || 95;
+  const hr = Number(user.heartRate) || 72;
   const sleep = Number(user.sleepHours) || 7.5;
-  const exercise = Number(user.exerciseDays) || 4;
+  const exercise = Number(user.exerciseDays) || 3;
   const smoking = user.smoking || "Never";
+  const stress = Number(user.stressLevel) || 3;
 
-  // 10-Yr CVD Risk calculation
-  let cvdBase = 5.2;
-  if (systolic > 130) cvdBase += 4.5;
-  else if (systolic > 120) cvdBase += 1.8;
-  if (chronoAge > 40) cvdBase += (chronoAge - 40) * 0.3;
-  if (exercise >= 4) cvdBase -= 2.0;
-  if (smoking === "Daily Smoker") cvdBase += 6.5;
-  const cvdRisk10Yr = Math.max(2.5, Number(cvdBase.toFixed(1)));
-  const cvdRiskStatus = cvdRisk10Yr > 12 ? "HIGH" : cvdRisk10Yr > 7 ? "MODERATE" : "LOW";
+  // 1. 10-Yr Cardiovascular Disease Risk (Dynamic Continuous Model)
+  let cvdBase = 3.0;
+  if (systolic > 115) cvdBase += (systolic - 115) * 0.22;
+  if (diastolic > 78) cvdBase += (diastolic - 78) * 0.18;
+  if (chronoAge > 30) cvdBase += (chronoAge - 30) * 0.25;
+  if (hr > 75) cvdBase += (hr - 75) * 0.08;
+  if (exercise > 0) cvdBase -= exercise * 0.75;
+  if (smoking === "Daily Smoker") cvdBase += 7.5;
+  else if (smoking === "Occasional") cvdBase += 3.2;
+  if (stress > 5) cvdBase += (stress - 5) * 0.6;
+  const cvdRisk10Yr = Math.max(1.5, Number(cvdBase.toFixed(1)));
 
-  // 5-Yr Diabetes Risk calculation
-  let diaBase = 4.0;
-  if (glucose > 105) diaBase += 6.0;
-  else if (glucose > 99) diaBase += 2.8;
-  if (exercise < 2) diaBase += 2.5;
-  const diabetesRisk5Yr = Math.max(1.8, Number(diaBase.toFixed(1)));
-  const diabetesRiskStatus = diabetesRisk5Yr > 10 ? "ELEVATED" : diabetesRisk5Yr > 6 ? "BORDERLINE" : "OPTIMAL";
+  let cvdRiskStatus: "OPTIMAL" | "LOW" | "MODERATE" | "HIGH" | "CRITICAL" = "OPTIMAL";
+  if (cvdRisk10Yr > 18) cvdRiskStatus = "CRITICAL";
+  else if (cvdRisk10Yr > 12) cvdRiskStatus = "HIGH";
+  else if (cvdRisk10Yr > 7) cvdRiskStatus = "MODERATE";
+  else if (cvdRisk10Yr > 4) cvdRiskStatus = "LOW";
 
-  // 5-Yr Hypertension Risk
-  let hypBase = systolic > 125 ? 14.5 : 5.8;
-  const hypertensionRisk5Yr = Number(hypBase.toFixed(1));
+  // 2. 5-Yr Type-2 Diabetes Risk (Dynamic Continuous Model)
+  let diaBase = 2.5;
+  if (glucose > 90) diaBase += (glucose - 90) * 0.24;
+  if (exercise < 3) diaBase += (3 - exercise) * 1.6;
+  else diaBase -= (exercise - 3) * 0.6;
+  if (sleep < 7) diaBase += (7 - sleep) * 1.4;
+  if (stress > 5) diaBase += (stress - 5) * 0.5;
+  const diabetesRisk5Yr = Math.max(1.2, Number(diaBase.toFixed(1)));
 
-  // Biological Age calculation
-  // Base offset from twin overallScore (higher score = younger biological age)
-  const ageOffset = Math.round((85 - twin.overallScore) * 0.3);
-  const biologicalAge = Math.max(18, chronoAge + ageOffset);
-  const ageDifference = ageOffset;
+  let diabetesRiskStatus: "OPTIMAL" | "BORDERLINE" | "ELEVATED" | "HIGH" = "OPTIMAL";
+  if (diabetesRisk5Yr > 15) diabetesRiskStatus = "HIGH";
+  else if (diabetesRisk5Yr > 9) diabetesRiskStatus = "ELEVATED";
+  else if (diabetesRisk5Yr > 5.5) diabetesRiskStatus = "BORDERLINE";
 
+  // 3. 5-Yr Vascular Stiffness / Hypertension Risk
+  let hypBase = 3.5;
+  if (systolic > 115) hypBase += (systolic - 115) * 0.38;
+  if (stress > 4) hypBase += (stress - 4) * 0.8;
+  if (exercise < 2) hypBase += (2 - exercise) * 1.5;
+  const hypertensionRisk5Yr = Math.max(2.0, Number(hypBase.toFixed(1)));
+
+  // 4. Biological Age Calculation (On-the-spot dynamic offset)
+  let ageShift = 0;
+  ageShift += (systolic - 120) * 0.12;
+  ageShift += (glucose - 95) * 0.10;
+  ageShift += (hr - 72) * 0.06;
+  ageShift -= (exercise - 2) * 0.8;
+  ageShift -= (sleep - 7.0) * 0.9;
+  ageShift += (stress - 3) * 0.5;
+  if (smoking === "Daily Smoker") ageShift += 4.5;
+
+  const ageDifference = Math.round(ageShift);
+  const biologicalAge = Math.max(18, chronoAge + ageDifference);
+
+  // Dynamic Risk Factors
   const topRiskFactors: string[] = [];
-  if (systolic > 120) topRiskFactors.push(`Pre-hypertensive systolic pressure (${systolic} mmHg)`);
-  if (glucose > 99) topRiskFactors.push(`Borderline fasting glucose (${glucose} mg/dL)`);
-  if (sleep < 7) topRiskFactors.push(`Sub-optimal sleep recovery (${sleep} hrs/night)`);
-  if (smoking === "Daily Smoker") topRiskFactors.push("Active daily smoking status");
-  if (topRiskFactors.length === 0) topRiskFactors.push("No acute clinical risk flags identified");
+  if (systolic > 130) topRiskFactors.push(`Stage-1 Hypertensive systolic pressure (${systolic} mmHg)`);
+  else if (systolic > 120) topRiskFactors.push(`Pre-hypertensive systolic pressure (${systolic} mmHg)`);
 
+  if (glucose > 115) topRiskFactors.push(`High fasting blood glucose (${glucose} mg/dL)`);
+  else if (glucose > 99) topRiskFactors.push(`Elevated borderline fasting glucose (${glucose} mg/dL)`);
+
+  if (hr > 85) topRiskFactors.push(`Elevated resting heart rate (${hr} BPM)`);
+  if (sleep < 6.5) topRiskFactors.push(`Insufficient sleep duration (${sleep} hrs/night)`);
+  if (exercise === 0) topRiskFactors.push("Sedentary routine with zero weekly aerobic conditioning");
+  else if (exercise <= 1) topRiskFactors.push(`Low physical activity frequency (${exercise} day/week)`);
+  if (stress >= 7) topRiskFactors.push(`Elevated chronic stress index (${stress}/10)`);
+  if (smoking === "Daily Smoker") topRiskFactors.push("Active daily tobacco smoking");
+
+  if (topRiskFactors.length === 0) {
+    topRiskFactors.push("Zero acute clinical liabilities detected");
+  }
+
+  // Dynamic Protective Factors
   const topProtectiveFactors: string[] = [];
-  if (exercise >= 3) topProtectiveFactors.push(`Consistent weekly physical activity (${exercise} days/week)`);
-  if (sleep >= 7.5) topProtectiveFactors.push(`Restorative sleep architecture (${sleep} hrs)`);
-  if (smoking === "Never") topProtectiveFactors.push("Non-smoker cardiovascular protection");
-  if (glucose <= 99) topProtectiveFactors.push("Normal baseline glycemic homeostasis");
+  if (systolic <= 120) topProtectiveFactors.push(`Optimal arterial blood pressure (${systolic}/${diastolic} mmHg)`);
+  if (glucose <= 95) topProtectiveFactors.push(`Tight glycemic control (${glucose} mg/dL fasting)`);
+  if (hr <= 70) topProtectiveFactors.push(`Athletic resting pulse (${hr} BPM)`);
+  if (exercise >= 3) topProtectiveFactors.push(`Consistent weekly conditioning (${exercise} days/week)`);
+  if (sleep >= 7.5) topProtectiveFactors.push(`Restorative sleep architecture (${sleep} hrs/night)`);
+  if (stress <= 3) topProtectiveFactors.push(`Well-regulated autonomic stress resilience (${stress}/10)`);
+  if (smoking === "Never") topProtectiveFactors.push("Non-smoker vascular endothelium protection");
 
-  const trajectoryOutlook =
-    twin.overallScore >= 85
-      ? "Stable Longevity Trajectory — Your multi-organ systems show high metabolic resilience and low multi-year disease vulnerability."
-      : "Precautionary Monitoring Trajectory — Targeted lifestyle adjustments can significantly reduce 5-year cardiovascular and metabolic liabilities.";
+  if (topProtectiveFactors.length === 0) {
+    topProtectiveFactors.push("Baseline physiological resilience");
+  }
+
+  let trajectoryOutlook = "Stable Longevity Trajectory — Your physiological systems demonstrate high metabolic resilience and minimal multi-year disease vulnerability.";
+  if (cvdRisk10Yr > 12 || diabetesRisk5Yr > 9 || systolic > 135 || glucose > 110) {
+    trajectoryOutlook = "Elevated Risk Trajectory — Notable vascular or glycemic strain detected. Initiating targeted lifestyle and dietary remedies can reverse risk velocity within 60-90 days.";
+  } else if (cvdRisk10Yr > 7 || diabetesRisk5Yr > 5.5 || systolic > 120 || glucose > 99) {
+    trajectoryOutlook = "Precautionary Monitoring Trajectory — Mild borderline biomarker shifts identified. Adhering to the recommended action protocols will optimize your longevity baseline.";
+  }
 
   return {
     cvdRisk10Yr,
@@ -335,7 +393,7 @@ export function computeFuturePredictions(user: Partial<UserProfile>, twin: Patie
 }
 
 export interface ClinicalRemedy {
-  category: "CARDIOVASCULAR" | "METABOLIC" | "CIRCADIAN" | "NUTRITIONAL";
+  category: "CARDIOVASCULAR" | "METABOLIC" | "CIRCADIAN" | "NUTRITIONAL" | "STRESS & AUTONOMIC";
   title: string;
   targetCondition: string;
   evidenceGrade: "GRADE_A" | "GRADE_B" | "CLINICAL_CONSENSUS";
@@ -345,75 +403,179 @@ export interface ClinicalRemedy {
 }
 
 /**
- * Generates personalized evidence-based clinical remedies derived strictly from current biometrics.
+ * Generates personalized evidence-based clinical remedies derived on the spot from exact numbers.
  */
-export function generatePersonalizedRemedies(user: Partial<UserProfile>, twin: PatientTwinState): ClinicalRemedy[] {
-  const systolic = Number(user.bloodPressure?.split("/")[0]) || 120;
+export function generatePersonalizedRemedies(
+  user: Partial<UserProfile>,
+  twin?: PatientTwinState
+): ClinicalRemedy[] {
+  let systolic = 120;
+  let diastolic = 80;
+  if (user.bloodPressure) {
+    const parts = user.bloodPressure.split("/");
+    systolic = Number(parts[0]) || 120;
+    diastolic = Number(parts[1]) || 80;
+  }
   const glucose = Number(user.fastingGlucose) || 95;
+  const hr = Number(user.heartRate) || 72;
   const sleep = Number(user.sleepHours) || 7.5;
-  const exercise = Number(user.exerciseDays) || 4;
+  const exercise = Number(user.exerciseDays) || 3;
+  const stress = Number(user.stressLevel) || 3;
 
   const remedies: ClinicalRemedy[] = [];
 
-  // 1. Cardiovascular & Blood Pressure Remedy
-  remedies.push({
-    category: "CARDIOVASCULAR",
-    title: systolic > 120 ? "Zone-2 Aerobic Protocol & Sodium Restriction" : "Cardioprotective Aerobic Maintenance",
-    targetCondition: `Blood Pressure Management (Current: ${user.bloodPressure || "120/80"} mmHg)`,
-    evidenceGrade: "GRADE_A",
-    actionSteps: [
-      "Engage in 35-45 minutes of continuous Zone-2 aerobic conditioning (brisk incline walking, cycling, or swimming) 4 days per week.",
-      "Limit dietary sodium to < 2,000 mg/day while increasing potassium-rich whole foods (avocados, leafy greens).",
-      "Incorporate 10 minutes of slow diaphragmatic resonant breathing (6 breaths/minute) to enhance vagal tone.",
-    ],
-    scientificMechanism: "Zone-2 exercise enhances mitochondrial density and nitric oxide-mediated endothelial vasodilation, lowering peripheral vascular resistance.",
-    expectedOutcome: "Projected 4-8 mmHg reduction in systolic blood pressure within 6-8 weeks.",
-  });
+  // 1. Cardiovascular Remedy
+  if (systolic > 130 || diastolic > 85) {
+    remedies.push({
+      category: "CARDIOVASCULAR",
+      title: "Stage-1 Hypertension Reversal Protocol",
+      targetCondition: `High Blood Pressure (${systolic}/${diastolic} mmHg)`,
+      evidenceGrade: "GRADE_A",
+      actionSteps: [
+        `Prescribe 40 minutes of continuous Zone-2 aerobic conditioning (HR 110-130 bpm) 4-5 days/week.`,
+        `Strict dietary sodium cap at < 1,500 mg/day; supplement with 4,000 mg potassium from leafy greens and coconut water.`,
+        `Daily 15-minute resonant slow breathing (5.5 breaths per minute) to downregulate sympathetic tone.`,
+      ],
+      scientificMechanism: "Zone-2 training stimulates nitric oxide synthetase (eNOS) in vascular endothelium, decreasing systemic arterial resistance.",
+      expectedOutcome: `Projected 8-14 mmHg drop in systolic BP and recovery to normal baseline within 8-12 weeks.`,
+    });
+  } else if (systolic > 120) {
+    remedies.push({
+      category: "CARDIOVASCULAR",
+      title: "Pre-Hypertension Stabilization & Sodium Balance",
+      targetCondition: `Elevated Blood Pressure (${systolic}/${diastolic} mmHg)`,
+      evidenceGrade: "GRADE_A",
+      actionSteps: [
+        `Maintain 35 minutes of moderate aerobic activity (brisk walking/cycling) 4 days per week.`,
+        `Limit dietary sodium to < 2,000 mg/day and integrate magnesium glycinate (300 mg before sleep).`,
+        `Perform 10 minutes of morning cardiovascular activation.`,
+      ],
+      scientificMechanism: "Restores sodium-potassium ATPase pump balance, reducing extracellular fluid volume and vascular wall tension.",
+      expectedOutcome: `Projected 4-7 mmHg reduction in systolic blood pressure.`,
+    });
+  } else {
+    remedies.push({
+      category: "CARDIOVASCULAR",
+      title: "Cardioprotective Endurance & Arterial Compliance Maintenance",
+      targetCondition: `Optimal Blood Pressure (${systolic}/${diastolic} mmHg, Heart Rate ${hr} BPM)`,
+      evidenceGrade: "GRADE_A",
+      actionSteps: [
+        `Continue 3-4 sessions weekly of mixed Zone-2 aerobic and resistance training.`,
+        `Maintain high-polyphenol Mediterranean dietary pattern with olive oil and dark berries.`,
+        `Annual echocardiogram and lipid profile verification.`,
+      ],
+      scientificMechanism: "Sustains microvascular perfusion and preserves cardiac ventricular stroke volume.",
+      expectedOutcome: "Sustained long-term arterial elasticity and < 3.5% 10-year CVD risk.",
+    });
+  }
 
-  // 2. Glycemic & Metabolic Remedy
-  remedies.push({
-    category: "METABOLIC",
-    title: glucose > 99 ? "Postprandial Glycemic Control & High-Fiber Protocol" : "Metabolic Glycemic Optimization",
-    targetCondition: `Fasting Blood Glucose Management (Current: ${glucose} mg/dL)`,
-    evidenceGrade: "GRADE_A",
-    actionSteps: [
-      "Perform a 10-15 minute moderate walk immediately following lunch and dinner meals to blunt postprandial glucose spikes.",
-      "Consume 30-40g of prebiotic dietary fiber daily (chia seeds, legumes, cruciferous vegetables) before refined carbohydrates.",
-      "Maintain a consistent 12-hour overnight digestive rest window (e.g. 8:00 PM to 8:00 AM).",
-    ],
-    scientificMechanism: "Postprandial muscle contraction activates non-insulin-dependent GLUT4 translocation, clearing circulating glucose rapidly.",
-    expectedOutcome: "Expected 5-12 mg/dL improvement in fasting blood glucose stability.",
-  });
+  // 2. Metabolic & Glucose Remedy
+  if (glucose > 115) {
+    remedies.push({
+      category: "METABOLIC",
+      title: "High-Priority Glycemic Reset & Insulin Sensitivity Protocol",
+      targetCondition: `Elevated Fasting Glucose (${glucose} mg/dL)`,
+      evidenceGrade: "GRADE_A",
+      actionSteps: [
+        `Compulsory 15-minute brisk walk immediately following the largest meal of the day.`,
+        `Adopt low-glycemic index (< 50 GI) nutritional plan; eliminate all liquid sugars and refined flour.`,
+        `Implement a 14:10 time-restricted feeding schedule (e.g. eating window 8:00 AM – 6:00 PM).`,
+        `Consider natural insulin-sensitizing botanicals like Berberine (500mg before meals) in consultation with physician.`,
+      ],
+      scientificMechanism: "Direct skeletal muscle contraction drives non-insulin dependent GLUT4 transporters to clear circulating glucose.",
+      expectedOutcome: `Projected 15-25 mg/dL reduction in fasting blood glucose within 30-45 days.`,
+    });
+  } else if (glucose > 99) {
+    remedies.push({
+      category: "METABOLIC",
+      title: "Impaired Fasting Glucose (IFG) Stabilization Plan",
+      targetCondition: `Borderline Fasting Glucose (${glucose} mg/dL)`,
+      evidenceGrade: "GRADE_A",
+      actionSteps: [
+        `Take a 10-minute walk after carb-heavy meals to blunt glycemic excursions.`,
+        `Consume 35g of prebiotic soluble fiber daily (chia, psyllium, legumes) before starches.`,
+        `Maintain a consistent 12-hour overnight digestive rest window.`,
+      ],
+      scientificMechanism: "Viscous fiber delays gastric emptying and flattens postprandial glucose absorption curves.",
+      expectedOutcome: `Normalizes fasting blood glucose into optimal 75-90 mg/dL band.`,
+    });
+  } else {
+    remedies.push({
+      category: "METABOLIC",
+      title: "Metabolic Homeostasis & Glycemic Resilience Maintenance",
+      targetCondition: `Optimal Fasting Blood Glucose (${glucose} mg/dL)`,
+      evidenceGrade: "GRADE_A",
+      actionSteps: [
+        `Maintain current whole-food fiber and lean protein balance.`,
+        `Perform resistance training 2-3 times per week to maximize muscle glycogen storage capacity.`,
+        `Hydrate with minimum 2.5L filtered water daily.`,
+      ],
+      scientificMechanism: "High skeletal muscle mass provides extensive glycogen sink, preventing future insulin resistance.",
+      expectedOutcome: "Sustained insulin sensitivity and < 2.5% 5-year diabetes risk.",
+    });
+  }
 
-  // 3. Circadian & Sleep Recovery Remedy
-  remedies.push({
-    category: "CIRCADIAN",
-    title: sleep < 7.0 ? "Circadian Phase Synchronization & Cortisol Management" : "Restorative Deep-Sleep Optimization",
-    targetCondition: `Sleep & Neuro-Recovery (Current: ${sleep} hrs/night)`,
-    evidenceGrade: "GRADE_B",
-    actionSteps: [
-      "View 10-15 minutes of natural sunlight within 30 minutes of waking to anchor the suprachiasmatic nucleus circadian master clock.",
-      "Eliminate screen exposure and blue spectrum light 60 minutes prior to bedtime.",
-      "Maintain bedroom ambient temperature between 18°C - 20°C (65°F - 68°F) for optimal slow-wave sleep consolidation.",
-    ],
-    scientificMechanism: "Consistent circadian light cues synchronize melatonin secretion rhythm, enhancing slow-wave glymphatic brain clearance.",
-    expectedOutcome: "Enhanced restorative REM/Deep sleep cycles and lowered morning baseline cortisol.",
-  });
+  // 3. Sleep & Circadian Remedy
+  if (sleep < 7.0) {
+    remedies.push({
+      category: "CIRCADIAN",
+      title: "Sleep Debt Recovery & Melatonin Synchronization",
+      targetCondition: `Restricted Sleep Architecture (${sleep} hrs/night)`,
+      evidenceGrade: "GRADE_B",
+      actionSteps: [
+        `Anchor wake time: View 15 minutes of direct morning sunlight within 30 minutes of waking.`,
+        `Strict digital screen cutoff 60 minutes before bed; block all blue-spectrum light.`,
+        `Keep bedroom temperature at 18°C - 20°C (65°F - 68°F) for deep slow-wave sleep induction.`,
+      ],
+      scientificMechanism: "Optimizes pineal gland melatonin synthesis and enhances glymphatic neuro-toxin brain clearance during slow-wave sleep.",
+      expectedOutcome: `Increases total sleep duration to 7.5+ hours and lowers morning resting pulse.`,
+    });
+  } else {
+    remedies.push({
+      category: "CIRCADIAN",
+      title: "Deep-Sleep Architecture & Neuro-Regeneration Optimization",
+      targetCondition: `Healthy Sleep Pattern (${sleep} hrs/night)`,
+      evidenceGrade: "GRADE_B",
+      actionSteps: [
+        `Maintain consistent sleep-wake timing within a 30-minute window every day.`,
+        `Avoid caffeine and stimulant intake within 9 hours of bedtime.`,
+        `Optimize bedroom darkness with blackout shades or sleep mask.`,
+      ],
+      scientificMechanism: "Preserves healthy REM and NREM Stage 3/4 slow-wave sleep cycles.",
+      expectedOutcome: "Maximizes cognitive alertness, cellular repair, and neuro-plasticity.",
+    });
+  }
 
-  // 4. Anti-Inflammatory Nutritional Strategy
-  remedies.push({
-    category: "NUTRITIONAL",
-    title: "Mediterranean Polyphenol-Rich Anti-Inflammatory Plan",
-    targetCondition: "Systemic Multi-Organ Cellular Homeostasis",
-    evidenceGrade: "GRADE_A",
-    actionSteps: [
-      "Incorporate 2-3 tablespoons of extra virgin olive oil (high polyphenol) daily into meals.",
-      "Consume wild-caught fatty fish (salmon, mackerel, sardines) twice per week for Omega-3 EPA/DHA.",
-      "Eliminate ultra-processed seed oils and artificial trans-fats.",
-    ],
-    scientificMechanism: "High-phenolic polyphenols and EPA/DHA downregulate NF-kB inflammatory cascades and support lipid homeostasis.",
-    expectedOutcome: "Optimized lipid fractions and enhanced long-term vascular endothelial compliance.",
-  });
+  // 4. Stress & Autonomic Regulation Remedy
+  if (stress >= 6) {
+    remedies.push({
+      category: "STRESS & AUTONOMIC",
+      title: "Sympathovagal Rebalancing & Cortisol Downregulation",
+      targetCondition: `Elevated Stress Index (${stress}/10)`,
+      evidenceGrade: "GRADE_A",
+      actionSteps: [
+        `Perform 10 minutes of physiological sigh breathing (double inhale through nose, long exhale through mouth) twice daily.`,
+        `Schedule 20 minutes of outdoor nature immersion or walking without headphones daily.`,
+        `Consider adaptogenic herbs like Ashwagandha (KSM-66 300mg) under physician guidance.`,
+      ],
+      scientificMechanism: "Stimulates vagal nerve parasympathetic afferents, reducing adrenal cortisol secretion and peripheral vasoconstriction.",
+      expectedOutcome: `Reduces resting heart rate by 4-8 BPM and lowers subjective stress by 40%.`,
+    });
+  } else {
+    remedies.push({
+      category: "NUTRITIONAL",
+      title: "Anti-Inflammatory Cellular Longevity Protocol",
+      targetCondition: `Systemic Vitality & Cellular Protection`,
+      evidenceGrade: "GRADE_A",
+      actionSteps: [
+        `Incorporate 2 tablespoons of extra virgin cold-pressed olive oil daily into meals.`,
+        `Consume 2 servings of fatty cold-water fish (salmon, sardines) per week for EPA/DHA.`,
+        `Eliminate ultra-processed seed oils, artificial sweeteners, and refined trans-fats.`,
+      ],
+      scientificMechanism: "Downregulates NF-kB inflammatory cascades and supports cellular mitochondrial membrane integrity.",
+      expectedOutcome: "Reduces systemic hs-CRP inflammation markers and promotes vascular longevity.",
+    });
+  }
 
   return remedies;
 }
