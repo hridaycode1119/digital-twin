@@ -59,10 +59,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("MongoDB Login Error:", error);
+    let msg = error.message || "MongoDB authentication failed.";
+    if (msg.includes("ECONNREFUSED") || msg.includes("timed out") || msg.includes("querySrv")) {
+      msg = "MongoDB is unreachable (ECONNREFUSED 127.0.0.1:27017). Please start your local MongoDB service or configure a free MongoDB Atlas connection string (MONGODB_URI) in .env.local.";
+    }
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "MongoDB authentication failed. Database connection required.",
+        error: msg,
       },
       { status: 500 }
     );
