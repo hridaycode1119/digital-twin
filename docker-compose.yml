@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: twinhealth_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: twinhealth
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: twinhealth_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-twinhealth_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-twinhealth_secure_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-twinhealth_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-twinhealth_user} -d ${POSTGRES_DB:-twinhealth_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: twinhealth_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: twinhealth_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: twinhealth_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  mongodb_data:
+  postgres_data:
+  redis_data:
+  minio_data:
+  qdrant_data:
