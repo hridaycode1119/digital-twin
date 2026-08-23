@@ -59,6 +59,19 @@ interface AuthContextType {
   updateUser: (updates: Partial<UserProfile>) => void;
   addRecord: (record: Omit<UserMedicalRecord, "id">) => void;
   deleteRecord: (id: string) => void;
+  syncManualParameters: (params: {
+    bloodPressure?: string;
+    fastingGlucose?: number;
+    heartRate?: number;
+    age?: number;
+    heightCm?: number;
+    weightKg?: number;
+    sleepHours?: number;
+    exerciseDays?: number;
+    dietType?: string;
+    smoking?: string;
+    stressLevel?: number;
+  }) => void;
   logout: () => void;
 }
 
@@ -71,6 +84,7 @@ const AuthContext = createContext<AuthContextType>({
   updateUser: () => {},
   addRecord: () => {},
   deleteRecord: () => {},
+  syncManualParameters: () => {},
   logout: () => {},
 });
 
@@ -90,7 +104,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(parsed);
           setIsLoggedIn(true);
 
-          // Fetch stored records for this user
           const storedRecords = localStorage.getItem(`digitaltwin_records_${parsed.patientId}`);
           if (storedRecords) {
             setRecords(JSON.parse(storedRecords));
@@ -102,13 +115,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Compute live physiological twin state for the logged-in user
+  // Compute live physiological twin state from latest uploaded report or manual calibration
   const twin = useMemo(() => {
+    const latestRecord = records.length > 0 ? records[0] : undefined;
     if (!user) {
-      return generatePersonalizedTwin({ name: "Guest" });
+      return generatePersonalizedTwin({ name: "Guest" }, latestRecord);
     }
-    return generatePersonalizedTwin({ ...user, recordsCount: records.length });
-  }, [user, records.length]);
+    return generatePersonalizedTwin({ ...user, recordsCount: records.length }, latestRecord);
+  }, [user, records]);
 
   const login = (userData: Partial<UserProfile> | string) => {
     let profile: UserProfile;
@@ -199,6 +213,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `rec_${Date.now()}`,
     };
 
+    // Extract updated biomarkers directly from report to update patient condition
+    let updatedGlucose: number | undefined;
+    let updatedBp: string | undefined;
+    let updatedHr: number | undefined;
+
+    for (const item of record.extractedValues || []) {
+      const n = item.name.toLowerCase();
+      const val = typeof item.value === "string" ? parseFloat(item.value) : item.value;
+      if (!isNaN(val)) {
+        if (n.includes("glucose") || n.includes("sugar")) updatedGlucose = val;
+        if (n.includes("heart rate") || n.includes("pulse")) updatedHr = val;
+      }
+      if (n.includes("blood pressure") && typeof item.value === "string") {
+        updatedBp = item.value;
+      }
+    }
+
     setRecords((prev) => {
       const updated = [record, ...prev];
       if (user?.patientId) {
@@ -208,6 +239,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return updated;
     });
+
+    if (updatedGlucose !== undefined || updatedBp !== undefined || updatedHr !== undefined) {
+      updateUser({
+        fastingGlucose: updatedGlucose !== undefined ? updatedGlucose : user?.fastingGlucose,
+        bloodPressure: updatedBp !== undefined ? updatedBp : user?.bloodPressure,
+        heartRate: updatedHr !== undefined ? updatedHr : user?.heartRate,
+      });
+    }
+  };
+
+  const syncManualParameters = (params: {
+    bloodPressure?: string;
+    fastingGlucose?: number;
+    heartRate?: number;
+    age?: number;
+    heightCm?: number;
+    weightKg?: number;
+    sleepHours?: number;
+    exerciseDays?: number;
+    dietType?: string;
+    smoking?: string;
+    stressLevel?: number;
+  }) => {
+    updateUser(params);
   };
 
   const deleteRecord = (id: string) => {
@@ -243,6 +298,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateUser,
         addRecord,
         deleteRecord,
+        syncManualParameters,
         logout,
       }}
     >

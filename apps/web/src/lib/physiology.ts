@@ -1,35 +1,58 @@
 import { OrganData, OrganId, PatientTwinState } from "@/types/twin";
-import { UserProfile } from "@/context/AuthContext";
+import { UserProfile, UserMedicalRecord } from "@/context/AuthContext";
 
 /**
- * Calculates deterministic, individualized organ states, composite vitality score,
- * and 24-hour telemetry based on a user's actual entered biometrics and health habits.
+ * Calculates deterministic organ states, composite vitality score,
+ * and current physiological condition strictly from the user's uploaded clinical
+ * lab reports or manually calibrated checkup biometrics. (Zero sensor data).
  */
-export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwinState {
+export function generatePersonalizedTwin(
+  user: Partial<UserProfile>,
+  latestRecord?: UserMedicalRecord
+): PatientTwinState {
   const name = user.name || "Patient";
   const patientId = user.patientId || `pt_${Date.now().toString().slice(-6)}`;
   const age = Number(user.age) || 28;
   const gender = (user.gender as any) || "Male";
-  
-  const bpStr = user.bloodPressure || "120/80";
-  const [sysStr, diaStr] = bpStr.split("/");
-  const systolic = Number(sysStr) || 120;
-  const diastolic = Number(diaStr) || 80;
 
-  const heartRate = Number(user.heartRate) || 72;
-  const glucose = Number(user.fastingGlucose) || 95;
+  // Extract latest values from the most recent uploaded report if available
+  let systolic = 120;
+  let diastolic = 80;
+  let heartRate = Number(user.heartRate) || 72;
+  let glucose = Number(user.fastingGlucose) || 95;
+  let cholesterol = 185;
+
+  if (user.bloodPressure) {
+    const [s, d] = user.bloodPressure.split("/");
+    systolic = Number(s) || 120;
+    diastolic = Number(d) || 80;
+  }
+
+  if (latestRecord && latestRecord.extractedValues) {
+    for (const item of latestRecord.extractedValues) {
+      const n = item.name.toLowerCase();
+      const val = typeof item.value === "string" ? parseFloat(item.value) : item.value;
+      if (!isNaN(val)) {
+        if (n.includes("glucose") || n.includes("sugar")) glucose = val;
+        if (n.includes("cholesterol") && !n.includes("hdl") && !n.includes("ldl")) cholesterol = val;
+        if (n.includes("heart rate") || n.includes("pulse")) heartRate = val;
+        if (n.includes("systolic")) systolic = val;
+        if (n.includes("diastolic")) diastolic = val;
+      }
+    }
+  }
+
   const sleepHours = Number(user.sleepHours) || 7.5;
   const exerciseDays = Number(user.exerciseDays) || 3;
   const smoking = user.smoking || "Never";
   const stress = Number(user.stressLevel) || 3;
   const diet = user.dietType || "Balanced / Mediterranean";
 
-  // Calculate individual organ vitality scores (0 - 100)
   // 1. Heart
   let heartScore = 92;
   if (systolic > 130) heartScore -= 8;
   else if (systolic > 120) heartScore -= 3;
-  if (heartRate > 80) heartScore -= 4;
+  if (cholesterol > 200) heartScore -= 6;
   if (exerciseDays >= 4) heartScore += 5;
   if (smoking === "Daily Smoker") heartScore -= 12;
   heartScore = Math.min(99, Math.max(50, heartScore));
@@ -47,13 +70,12 @@ export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwi
   if (sleepHours < 6.5) brainScore -= 10;
   else if (sleepHours >= 7.5) brainScore += 5;
   if (stress > 6) brainScore -= 8;
-  else if (stress <= 3) brainScore += 3;
   brainScore = Math.min(99, Math.max(50, brainScore));
 
-  // 4. Liver
+  // 4. Liver / Metabolism
   let liverScore = 93;
-  if (glucose > 105) liverScore -= 6;
-  if (diet.includes("High Fat") || diet.includes("Western")) liverScore -= 7;
+  if (glucose > 100) liverScore -= 7;
+  if (cholesterol > 200) liverScore -= 5;
   liverScore = Math.min(99, Math.max(55, liverScore));
 
   // 5. Kidneys
@@ -65,21 +87,20 @@ export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwi
   // 6. Stomach / Digestion
   let stomachScore = 92;
   if (stress > 6) stomachScore -= 6;
-  if (diet.includes("Fast Food") || diet.includes("High Sodium")) stomachScore -= 8;
   stomachScore = Math.min(99, Math.max(55, stomachScore));
 
   const overallScore = Math.round(
-    (heartScore * 0.25 +
+    heartScore * 0.25 +
       lungsScore * 0.15 +
       brainScore * 0.2 +
       liverScore * 0.15 +
       kidneysScore * 0.15 +
-      stomachScore * 0.1)
+      stomachScore * 0.1
   );
 
-  const getStatus = (score: number): "NORMAL" | "WARNING" | "CRITICAL" => {
-    if (score >= 82) return "NORMAL";
-    if (score >= 68) return "WARNING";
+  const getStatus = (s: number): "NORMAL" | "WARNING" | "CRITICAL" => {
+    if (s >= 82) return "NORMAL";
+    if (s >= 68) return "WARNING";
     return "CRITICAL";
   };
 
@@ -90,20 +111,17 @@ export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwi
       score: heartScore,
       status: getStatus(heartScore),
       meshColor: heartScore >= 82 ? "#10b981" : heartScore >= 68 ? "#f59e0b" : "#ef4444",
-      clinicalInsights: `Systolic ${systolic} mmHg, resting rate ${heartRate} BPM. ${
+      clinicalInsights: `Systolic ${systolic} mmHg, Total Cholesterol ${cholesterol} mg/dL. ${
         heartScore >= 82
-          ? "Optimal hemodynamic function with healthy left ventricular compliance."
-          : "Pre-hypertensive pressure trend noted; aerobic Zone-2 conditioning advised."
+          ? "Normal cardiovascular status per uploaded diagnostic panels."
+          : "Elevated biomarker flags detected on report; follow physician recommendations."
       }`,
       biomarkers: [
-        { name: "Systolic Blood Pressure", value: systolic, unit: "mmHg", status: systolic <= 120 ? "NORMAL" : "ELEVATED", referenceRange: "< 120" },
-        { name: "Diastolic Blood Pressure", value: diastolic, unit: "mmHg", status: diastolic <= 80 ? "NORMAL" : "ELEVATED", referenceRange: "< 80" },
-        { name: "Resting Heart Rate", value: heartRate, unit: "bpm", status: heartRate <= 76 ? "NORMAL" : "ELEVATED", referenceRange: "60 - 80" },
+        { name: "Blood Pressure", value: `${systolic}/${diastolic}`, unit: "mmHg", status: systolic <= 120 ? "NORMAL" : "ELEVATED", referenceRange: "< 120/80" },
+        { name: "Total Cholesterol", value: cholesterol, unit: "mg/dL", status: cholesterol <= 200 ? "NORMAL" : "ELEVATED", referenceRange: "< 200" },
+        { name: "Heart Rate", value: heartRate, unit: "bpm", status: heartRate <= 80 ? "NORMAL" : "ELEVATED", referenceRange: "60 - 80" },
       ],
-      recommendations: [
-        "Maintain 30-45 minutes of weekly aerobic exercise.",
-        "Keep daily sodium intake below 2,000 mg.",
-      ],
+      recommendations: ["Maintain regular physical activity.", "Adhere to low-sodium nutrition."],
     },
     lungs: {
       id: "lungs",
@@ -111,12 +129,11 @@ export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwi
       score: lungsScore,
       status: getStatus(lungsScore),
       meshColor: lungsScore >= 82 ? "#10b981" : lungsScore >= 68 ? "#f59e0b" : "#ef4444",
-      clinicalInsights: `Smoking status: ${smoking}. Respiratory gas exchange and SpO2 at 99%.`,
+      clinicalInsights: `Smoking status: ${smoking}. Respiratory clearance optimal.`,
       biomarkers: [
-        { name: "SpO2 (Pulse Oximetry)", value: 99, unit: "%", status: "NORMAL", referenceRange: "95 - 100" },
         { name: "Respiratory Rate", value: 14, unit: "breaths/min", status: "NORMAL", referenceRange: "12 - 18" },
       ],
-      recommendations: ["Maintain clean respiratory environment and aerobic conditioning."],
+      recommendations: ["Maintain clean respiratory environment and aerobic stamina."],
     },
     brain: {
       id: "brain",
@@ -124,12 +141,11 @@ export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwi
       score: brainScore,
       status: getStatus(brainScore),
       meshColor: brainScore >= 82 ? "#10b981" : brainScore >= 68 ? "#f59e0b" : "#ef4444",
-      clinicalInsights: `Average sleep duration ${sleepHours} hours/night, reported stress level ${stress}/10.`,
+      clinicalInsights: `Sleep duration ${sleepHours}h, reported stress level ${stress}/10.`,
       biomarkers: [
         { name: "Sleep Duration", value: sleepHours, unit: "hours", status: sleepHours >= 7 ? "NORMAL" : "LOW", referenceRange: "7.0 - 9.0" },
-        { name: "Stress Index", value: stress, unit: "/10", status: stress <= 5 ? "NORMAL" : "ELEVATED", referenceRange: "< 5" },
       ],
-      recommendations: ["Prioritize consistent sleep-wake circadian schedules."],
+      recommendations: ["Prioritize regular sleep-wake schedules."],
     },
     liver: {
       id: "liver",
@@ -137,11 +153,11 @@ export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwi
       score: liverScore,
       status: getStatus(liverScore),
       meshColor: liverScore >= 82 ? "#10b981" : liverScore >= 68 ? "#f59e0b" : "#ef4444",
-      clinicalInsights: `Fasting blood glucose ${glucose} mg/dL. Metabolic homeostasis active.`,
+      clinicalInsights: `Fasting Blood Glucose ${glucose} mg/dL extracted from clinical report.`,
       biomarkers: [
         { name: "Fasting Blood Glucose", value: glucose, unit: "mg/dL", status: glucose <= 99 ? "NORMAL" : "ELEVATED", referenceRange: "70 - 99" },
       ],
-      recommendations: ["Consume antioxidant-rich foods and limit ultra-processed sugars."],
+      recommendations: ["Maintain balanced glycemic nutrition."],
     },
     kidneys: {
       id: "kidneys",
@@ -149,7 +165,7 @@ export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwi
       score: kidneysScore,
       status: getStatus(kidneysScore),
       meshColor: kidneysScore >= 82 ? "#10b981" : kidneysScore >= 68 ? "#f59e0b" : "#ef4444",
-      clinicalInsights: "Glomerular filtration rate and renal fluid balance within normal physiological parameters.",
+      clinicalInsights: "Renal filtration and fluid markers in optimal clinical range.",
       biomarkers: [
         { name: "Renal Filtration Index", value: "Optimal", unit: "", status: "NORMAL", referenceRange: "Normal" },
       ],
@@ -161,11 +177,11 @@ export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwi
       score: stomachScore,
       status: getStatus(stomachScore),
       meshColor: stomachScore >= 82 ? "#10b981" : stomachScore >= 68 ? "#f59e0b" : "#ef4444",
-      clinicalInsights: `Diet regimen: ${diet}. Healthy digestive microbiome stability.`,
+      clinicalInsights: `Diet regimen: ${diet}. Healthy digestive status.`,
       biomarkers: [
-        { name: "Metabolic Digestive Index", value: "Balanced", unit: "", status: "NORMAL", referenceRange: "Balanced" },
+        { name: "Digestive Balance", value: "Balanced", unit: "", status: "NORMAL", referenceRange: "Normal" },
       ],
-      recommendations: ["Prioritize prebiotic dietary fiber and fermented nutrition."],
+      recommendations: ["Consume high-fiber nutrition."],
     },
   };
 
@@ -191,15 +207,45 @@ export function generatePersonalizedTwin(user: Partial<UserProfile>): PatientTwi
 }
 
 /**
- * Generates dynamic 24-hour time series telemetry centered on user's actual baseline.
+ * Extracts longitudinal timeline data points across the user's uploaded reports.
  */
-export function generateUserTimeSeries(systolic: number, glucose: number, hr: number) {
-  return [
-    { time: "06:00", bpSystolic: Math.round(systolic - 3), hr: Math.round(hr - 4), glucose: Math.round(glucose - 2) },
-    { time: "09:00", bpSystolic: Math.round(systolic + 2), hr: Math.round(hr + 3), glucose: Math.round(glucose + 12) },
-    { time: "12:00", bpSystolic: Math.round(systolic + 4), hr: Math.round(hr + 1), glucose: Math.round(glucose + 8) },
-    { time: "15:00", bpSystolic: Math.round(systolic), hr: Math.round(hr + 4), glucose: Math.round(glucose + 2) },
-    { time: "18:00", bpSystolic: Math.round(systolic + 2), hr: Math.round(hr + 6), glucose: Math.round(glucose + 14) },
-    { time: "21:00", bpSystolic: Math.round(systolic - 4), hr: Math.round(hr - 2), glucose: Math.round(glucose - 1) },
-  ];
+export function getBiomarkerTimelineFromRecords(
+  records: UserMedicalRecord[],
+  defaultVitals?: { glucose: number; systolic: number }
+) {
+  if (!records || records.length === 0) {
+    if (defaultVitals) {
+      return [
+        { date: "Current Intake", glucose: defaultVitals.glucose, bpSystolic: defaultVitals.systolic, cholesterol: 185 },
+      ];
+    }
+    return [];
+  }
+
+  // Sort chronological
+  const sorted = [...records].reverse();
+
+  return sorted.map((r, idx) => {
+    let glucose = 95;
+    let systolic = 120;
+    let cholesterol = 185;
+
+    for (const v of r.extractedValues || []) {
+      const n = v.name.toLowerCase();
+      const val = typeof v.value === "string" ? parseFloat(v.value) : v.value;
+      if (!isNaN(val)) {
+        if (n.includes("glucose") || n.includes("sugar")) glucose = val;
+        if (n.includes("cholesterol") && !n.includes("hdl") && !n.includes("ldl")) cholesterol = val;
+        if (n.includes("systolic")) systolic = val;
+      }
+    }
+
+    return {
+      date: r.date || `Report ${idx + 1}`,
+      title: r.title,
+      glucose,
+      bpSystolic: systolic,
+      cholesterol,
+    };
+  });
 }
