@@ -4,6 +4,8 @@ import { User } from "@/models/User";
 import { DigitalTwin } from "@/models/DigitalTwin";
 import { initialPatientTwin } from "@/data/mockPatient";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const { name, email, password, role = "PATIENT" } = await request.json();
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
       patientId,
       name,
       email: email.toLowerCase(),
-      password, // Note: In production use bcryptjs hash
+      password,
       role,
     });
 

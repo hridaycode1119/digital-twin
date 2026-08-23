@@ -6,6 +6,8 @@ import { MedicalRecord } from "@/models/MedicalRecord";
 import { Prediction } from "@/models/Prediction";
 import { initialPatientTwin } from "@/data/mockPatient";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await connectToDatabase();

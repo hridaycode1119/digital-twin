@@ -3,6 +3,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { DigitalTwin } from "@/models/DigitalTwin";
 import { initialPatientTwin } from "@/data/mockPatient";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const patientId = searchParams.get("patientId") || "pt_1029384";
