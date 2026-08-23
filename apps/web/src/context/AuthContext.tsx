@@ -1,7 +1,28 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { PatientTwinState } from "@/types/twin";
+import { generatePersonalizedTwin } from "@/lib/physiology";
+
+export interface UserMedicalRecord {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  facility: string;
+  status: "VERIFIED" | "EXTRACTED" | "PROCESSING";
+  abnormalCount: number;
+  extractedValues: {
+    name: string;
+    value: number | string;
+    unit: string;
+    range: string;
+    isAbnormal: boolean;
+  }[];
+  aiSummary: string;
+  doctorQuestions: string[];
+}
 
 export interface UserProfile {
   id: string;
@@ -12,8 +33,19 @@ export interface UserProfile {
   overallScore: number;
   age?: number;
   gender?: string;
+  bloodGroup?: string;
+  heightCm?: number;
+  weightKg?: number;
   bloodPressure?: string;
+  heartRate?: number;
   fastingGlucose?: number;
+  sleepHours?: number;
+  exerciseDays?: number;
+  dietType?: string;
+  smoking?: string;
+  stressLevel?: number;
+  allergies?: string;
+  familyHistory?: string;
   recordsCount?: number;
   riskAlertsCount?: number;
 }
@@ -21,68 +53,114 @@ export interface UserProfile {
 interface AuthContextType {
   isLoggedIn: boolean;
   user: UserProfile | null;
+  twin: PatientTwinState;
+  records: UserMedicalRecord[];
   login: (userData: Partial<UserProfile> | string) => void;
   updateUser: (updates: Partial<UserProfile>) => void;
+  addRecord: (record: Omit<UserMedicalRecord, "id">) => void;
+  deleteRecord: (id: string) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   user: null,
+  twin: generatePersonalizedTwin({ name: "Visitor" }),
+  records: [],
   login: () => {},
   updateUser: () => {},
+  addRecord: () => {},
+  deleteRecord: () => {},
   logout: () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [records, setRecords] = useState<UserMedicalRecord[]>([]);
   const router = useRouter();
 
-  // Load actual user from localStorage on client mount
+  // Load user & records from localStorage on client mount
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("digitaltwin_user");
       if (storedUser) {
-        const parsed = JSON.parse(storedUser);
+        const parsed: UserProfile = JSON.parse(storedUser);
         if (parsed && parsed.email) {
           setUser(parsed);
           setIsLoggedIn(true);
+
+          // Fetch stored records for this user
+          const storedRecords = localStorage.getItem(`digitaltwin_records_${parsed.patientId}`);
+          if (storedRecords) {
+            setRecords(JSON.parse(storedRecords));
+          }
         }
       }
     } catch (e) {
-      console.warn("Could not parse stored session:", e);
+      console.warn("Could not load stored user session:", e);
     }
   }, []);
+
+  // Compute live physiological twin state for the logged-in user
+  const twin = useMemo(() => {
+    if (!user) {
+      return generatePersonalizedTwin({ name: "Guest" });
+    }
+    return generatePersonalizedTwin({ ...user, recordsCount: records.length });
+  }, [user, records.length]);
 
   const login = (userData: Partial<UserProfile> | string) => {
     let profile: UserProfile;
 
     if (typeof userData === "string") {
-      const email = userData.trim();
+      const email = userData.trim().toLowerCase();
       const derivedName = email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      const patientId = `pt_${Date.now().toString().slice(-6)}`;
       profile = {
         id: `usr_${Date.now()}`,
-        patientId: `pt_${Date.now().toString().slice(-6)}`,
+        patientId,
         name: derivedName || "Patient",
         email,
         role: "PATIENT",
-        overallScore: 85,
+        overallScore: 88,
+        age: 26,
+        gender: "Male",
+        bloodPressure: "120/80",
+        heartRate: 72,
+        fastingGlucose: 95,
+        sleepHours: 7.5,
+        exerciseDays: 4,
+        dietType: "Balanced / Mediterranean",
+        smoking: "Never",
+        stressLevel: 3,
         recordsCount: 0,
         riskAlertsCount: 0,
       };
     } else {
+      const patientId = userData.patientId || `pt_${Date.now().toString().slice(-6)}`;
       profile = {
         id: userData.id || `usr_${Date.now()}`,
-        patientId: userData.patientId || `pt_${Date.now().toString().slice(-6)}`,
+        patientId,
         name: userData.name || (userData.email ? userData.email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Patient"),
-        email: userData.email || "user@digitaltwin.health",
+        email: (userData.email || "user@digitaltwin.health").toLowerCase(),
         role: userData.role || "PATIENT",
-        overallScore: userData.overallScore || 85,
-        age: userData.age || 32,
-        gender: userData.gender || "Unspecified",
+        overallScore: userData.overallScore || 88,
+        age: userData.age || 26,
+        gender: userData.gender || "Male",
+        bloodGroup: userData.bloodGroup || "B+",
+        heightCm: userData.heightCm || 175,
+        weightKg: userData.weightKg || 70,
         bloodPressure: userData.bloodPressure || "120/80",
+        heartRate: userData.heartRate || 72,
         fastingGlucose: userData.fastingGlucose || 95,
+        sleepHours: userData.sleepHours || 7.5,
+        exerciseDays: userData.exerciseDays || 4,
+        dietType: userData.dietType || "Balanced / Mediterranean",
+        smoking: userData.smoking || "Never",
+        stressLevel: userData.stressLevel || 3,
+        allergies: userData.allergies || "None",
+        familyHistory: userData.familyHistory || "None",
         recordsCount: userData.recordsCount || 0,
         riskAlertsCount: userData.riskAlertsCount || 0,
       };
@@ -90,10 +168,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUser(profile);
     setIsLoggedIn(true);
+
     try {
       localStorage.setItem("digitaltwin_user", JSON.stringify(profile));
+      const storedRecs = localStorage.getItem(`digitaltwin_records_${profile.patientId}`);
+      if (storedRecs) {
+        setRecords(JSON.parse(storedRecs));
+      } else {
+        setRecords([]);
+      }
     } catch (e) {
-      console.warn("Storage failed:", e);
+      console.warn("Storage write failed:", e);
     }
   };
 
@@ -108,9 +193,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const addRecord = (newRec: Omit<UserMedicalRecord, "id">) => {
+    const record: UserMedicalRecord = {
+      ...newRec,
+      id: `rec_${Date.now()}`,
+    };
+
+    setRecords((prev) => {
+      const updated = [record, ...prev];
+      if (user?.patientId) {
+        try {
+          localStorage.setItem(`digitaltwin_records_${user.patientId}`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+  };
+
+  const deleteRecord = (id: string) => {
+    setRecords((prev) => {
+      const updated = prev.filter((r) => r.id !== id);
+      if (user?.patientId) {
+        try {
+          localStorage.setItem(`digitaltwin_records_${user.patientId}`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+  };
+
   const logout = () => {
     setIsLoggedIn(false);
     setUser(null);
+    setRecords([]);
     try {
       localStorage.removeItem("digitaltwin_user");
     } catch (e) {}
@@ -118,7 +233,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, login, updateUser, logout }}>
+    <AuthContext.Provider
+      value={{
+        isLoggedIn,
+        user,
+        twin,
+        records,
+        login,
+        updateUser,
+        addRecord,
+        deleteRecord,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -19,12 +19,13 @@ import {
   ChevronRight,
   Clock,
   CheckCircle,
+  PlusCircle,
 } from "lucide-react";
-import { initialPatientTwin } from "@/data/mockPatient";
 import { OrganBadge } from "@/components/ui/OrganBadge";
 import { OrganData } from "@/types/twin";
 import { OrganDetailModal } from "@/components/twin/OrganDetailModal";
 import { useAuth } from "@/context/AuthContext";
+import { generateUserTimeSeries } from "@/lib/physiology";
 import {
   ResponsiveContainer,
   LineChart,
@@ -35,26 +36,20 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const vitalsTimeSeriesData = [
-  { time: "06:00", bpSystolic: 122, hr: 68, glucose: 95 },
-  { time: "09:00", bpSystolic: 126, hr: 74, glucose: 108 },
-  { time: "12:00", bpSystolic: 128, hr: 72, glucose: 104 },
-  { time: "15:00", bpSystolic: 124, hr: 76, glucose: 98 },
-  { time: "18:00", bpSystolic: 126, hr: 78, glucose: 112 },
-  { time: "21:00", bpSystolic: 120, hr: 70, glucose: 96 },
-];
-
 export default function DashboardPage() {
   const [selectedOrgan, setSelectedOrgan] = useState<OrganData | null>(null);
-  const { user } = useAuth();
+  const { user, twin, records } = useAuth();
 
-  const patientName = user?.name || "Hriday";
-  const patientId = user?.patientId || "pt_1029384";
-  const overallScore = user?.overallScore || 87;
-  const userBp = user?.bloodPressure || "124/80";
-  const userGlucose = user?.fastingGlucose ? `${user.fastingGlucose} mg/dL` : "98 mg/dL";
+  const patientName = user?.name || "Patient";
+  const patientId = user?.patientId || "pt_001";
+  const overallScore = twin.overallScore;
 
-  const organs = Object.values(initialPatientTwin.organs);
+  const systolic = Number(user?.bloodPressure?.split("/")[0]) || 120;
+  const glucose = Number(user?.fastingGlucose) || 95;
+  const hr = Number(user?.heartRate) || 72;
+
+  const vitalsTimeSeriesData = generateUserTimeSeries(systolic, glucose, hr);
+  const organs = Object.values(twin.organs);
 
   return (
     <div className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12 py-8 space-y-8 transition-colors duration-300">
@@ -65,7 +60,7 @@ export default function DashboardPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
               Active Digital Twin Profile
             </span>
-            <span className="text-xs text-slate-400 font-mono">ID: #{patientId}</span>
+            <span className="text-xs text-slate-400 font-mono">Patient ID: #{patientId}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-serif">
             Welcome back, {patientName}
@@ -88,19 +83,19 @@ export default function DashboardPage() {
             className="px-5 py-3 rounded-2xl bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-[#1c3328] text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />
-            <span>Upload Reports</span>
+            <span>Reports ({records.length})</span>
           </Link>
         </div>
       </div>
 
       {/* Key Score & Vitals Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {/* Overall Score */}
         <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Twin Vitality Index</span>
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">
-              Optimal
+              {overallScore >= 82 ? "Optimal" : "Monitoring"}
             </span>
           </div>
           <div>
@@ -113,7 +108,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            5 of 6 organ systems functioning at peak baseline.
+            Calculated from {patientName}&apos;s real biometrics and habits.
           </p>
         </div>
 
@@ -124,11 +119,13 @@ export default function DashboardPage() {
             <Activity className="w-4 h-4 text-emerald-600" />
           </div>
           <div>
-            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{userBp}</span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
+              {user?.bloodPressure || "120/80"}
+            </span>
             <span className="text-xs text-slate-400 ml-1.5">mmHg</span>
           </div>
           <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
-            <CheckCircle className="w-3 h-3" /> Normal Target Band
+            <CheckCircle className="w-3 h-3" /> User Calibration Active
           </span>
         </div>
 
@@ -139,23 +136,23 @@ export default function DashboardPage() {
             <Flame className="w-4 h-4 text-emerald-600" />
           </div>
           <div>
-            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{userGlucose}</span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{glucose} mg/dL</span>
           </div>
           <span className="text-[11px] text-slate-500 dark:text-slate-400">Ref: 70 - 99 mg/dL</span>
         </div>
 
-        {/* Active Flags */}
+        {/* Uploaded Records */}
         <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col justify-between space-y-3 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Doctor Care Plan</span>
-            <Calendar className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Uploaded Lab Reports</span>
+            <FileText className="w-4 h-4 text-emerald-600" />
           </div>
           <div>
-            <span className="text-lg font-bold text-slate-900 dark:text-white">Active Plan</span>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Signed by Dr. Sarah Jenkins</p>
+            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{records.length}</span>
+            <span className="text-xs text-slate-400 ml-1.5">Documents</span>
           </div>
-          <Link href="/doctor" className="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
-            <span>View signed directive</span>
+          <Link href="/records" className="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
+            <span>{records.length > 0 ? "Manage records" : "+ Upload your first report"}</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -166,8 +163,10 @@ export default function DashboardPage() {
         {/* Left: Organ System Status Grid (7 Cols) */}
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-serif">Organ System Status</h3>
-            <span className="text-xs text-slate-400">Click any organ to inspect historical biomarkers</span>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-serif">
+              {patientName}&apos;s Organ System Status
+            </h3>
+            <span className="text-xs text-slate-400">Click any organ to inspect biomarkers</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -204,12 +203,16 @@ export default function DashboardPage() {
         <div className="lg:col-span-5 p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white font-serif">24-Hour Continuous Telemetry</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white font-serif">
+                24-Hour Continuous Telemetry
+              </h3>
               <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
                 Live Feed
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Synchronized from Apple HealthKit & CGM streams</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Calibrated to {patientName}&apos;s baseline biometrics
+            </p>
           </div>
 
           <div className="h-56 w-full">
@@ -217,7 +220,7 @@ export default function DashboardPage() {
               <LineChart data={vitalsTimeSeriesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis domain={[60, 140]} stroke="#94a3b8" fontSize={11} tickLine={false} />
+                <YAxis domain={[50, 150]} stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "rgba(15, 23, 42, 0.95)",
@@ -248,9 +251,9 @@ export default function DashboardPage() {
           </div>
 
           <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Last sync: 2 mins ago</span>
+            <span>Last sync: Just now</span>
             <Link href="/records" className="text-emerald-800 dark:text-emerald-400 font-bold hover:underline">
-              Inspect all raw records →
+              Inspect records vault →
             </Link>
           </div>
         </div>

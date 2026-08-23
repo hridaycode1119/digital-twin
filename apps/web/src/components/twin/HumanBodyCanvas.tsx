@@ -4,8 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { initialPatientTwin } from "@/data/mockPatient";
 import { OrganData, OrganId } from "@/types/twin";
+import { useAuth } from "@/context/AuthContext";
 import {
   Brain,
   Heart,
@@ -25,6 +25,7 @@ interface HumanBodyCanvasProps {
   onSelectOrgan?: (organ: OrganData) => void;
   selectedOrganId?: OrganId | null;
   className?: string;
+  customOrgans?: OrganData[];
 }
 
 const organIconMap: Record<OrganId, React.ReactNode> = {
@@ -50,6 +51,7 @@ export const HumanBodyCanvas: React.FC<HumanBodyCanvasProps> = ({
   onSelectOrgan,
   selectedOrganId,
   className = "",
+  customOrgans,
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const [hoveredOrgan, setHoveredOrgan] = useState<OrganId | null>(null);
@@ -57,291 +59,308 @@ export const HumanBodyCanvas: React.FC<HumanBodyCanvasProps> = ({
   const [isWireframe, setIsWireframe] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const organsList = Object.values(initialPatientTwin.organs);
+  const { twin } = useAuth();
+  const organsList = customOrgans || Object.values(twin.organs);
 
   useEffect(() => {
     const currentMount = mountRef.current;
     if (!currentMount) return;
 
-    const width = currentMount.clientWidth || 520;
-    const height = currentMount.clientHeight || 500;
-
-    // 1. Scene Setup
+    // SCENE, CAMERA, RENDERER
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 0.05, width < 500 ? 5.2 : 4.6);
+    const width = currentMount.clientWidth || 500;
+    const height = currentMount.clientHeight || 600;
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(0, 1.1, 4.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
     currentMount.appendChild(renderer.domElement);
 
-    // Controls
+    // ORBIT CONTROLS
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.enableZoom = true;
-    controls.minDistance = 2.5;
-    controls.maxDistance = 8.5;
-    controls.maxPolarAngle = Math.PI / 1.7;
+    controls.enableZoom = false;
     controls.minPolarAngle = Math.PI / 3;
-    controls.touches = {
-      ONE: THREE.TOUCH.ROTATE,
-      TWO: THREE.TOUCH.DOLLY_PAN,
-    };
+    controls.maxPolarAngle = (2 * Math.PI) / 3;
 
-    // 2. Natural Lighting Setup
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
+    // LIGHTING
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xecfdf5, 2.4);
-    keyLight.position.set(3, 5, 4);
+    const keyLight = new THREE.DirectionalLight(0xa7f3d0, 2.0);
+    keyLight.position.set(4, 8, 5);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xd1fae5, 1.5);
-    fillLight.position.set(-3, -2, 3);
+    const fillLight = new THREE.DirectionalLight(0x6ee7b7, 1.2);
+    fillLight.position.set(-4, 2, -3);
     scene.add(fillLight);
 
-    // 3. Subtle Warm Background Arc
-    const ringGeo = new THREE.RingGeometry(2.1, 2.12, 64);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x10b981,
-      side: THREE.DoubleSide,
+    const backLight = new THREE.DirectionalLight(0x34d399, 1.5);
+    backLight.position.set(0, -4, -4);
+    scene.add(backLight);
+
+    // MINT/EMERALD TRANSLUCENT SHADER MATERIAL
+    const bodyMaterial = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(0xa7f3d0),
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.82,
+      roughness: 0.25,
+      metalness: 0.05,
+      transmission: 0.2,
+      ior: 1.3,
+      wireframe: isWireframe,
     });
-    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-    ringMesh.position.set(0, 0, -0.6);
-    scene.add(ringMesh);
 
-    // 4. Load 3D Human Anatomy Model (GLTF)
-    const modelGroup = new THREE.Group();
-    scene.add(modelGroup);
+    let bodyMesh: THREE.Object3D | null = null;
 
+    // PROCEDURAL ANATOMICAL MANNEQUIN
+    const mannequinGroup = new THREE.Group();
+
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.24, 32, 32);
+    const head = new THREE.Mesh(headGeo, bodyMaterial);
+    head.position.y = 1.95;
+    mannequinGroup.add(head);
+
+    // Neck
+    const neckGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.15, 24);
+    const neck = new THREE.Mesh(neckGeo, bodyMaterial);
+    neck.position.y = 1.75;
+    mannequinGroup.add(neck);
+
+    // Chest / Torso
+    const chestGeo = new THREE.CylinderGeometry(0.38, 0.32, 0.6, 32);
+    const chest = new THREE.Mesh(chestGeo, bodyMaterial);
+    chest.position.y = 1.35;
+    mannequinGroup.add(chest);
+
+    // Abdomen / Pelvis
+    const pelvisGeo = new THREE.CylinderGeometry(0.32, 0.28, 0.5, 32);
+    const pelvis = new THREE.Mesh(pelvisGeo, bodyMaterial);
+    pelvis.position.y = 0.85;
+    mannequinGroup.add(pelvis);
+
+    // Left Leg
+    const legGeo = new THREE.CylinderGeometry(0.12, 0.08, 0.95, 24);
+    const leftLeg = new THREE.Mesh(legGeo, bodyMaterial);
+    leftLeg.position.set(-0.16, 0.15, 0);
+    mannequinGroup.add(leftLeg);
+
+    // Right Leg
+    const rightLeg = new THREE.Mesh(legGeo, bodyMaterial);
+    rightLeg.position.set(0.16, 0.15, 0);
+    mannequinGroup.add(rightLeg);
+
+    // Left Arm
+    const armGeo = new THREE.CylinderGeometry(0.09, 0.07, 0.8, 24);
+    const leftArm = new THREE.Mesh(armGeo, bodyMaterial);
+    leftArm.position.set(-0.48, 1.25, 0);
+    leftArm.rotation.z = 0.15;
+    mannequinGroup.add(leftArm);
+
+    // Right Arm
+    const rightArm = new THREE.Mesh(armGeo, bodyMaterial);
+    rightArm.position.set(0.48, 1.25, 0);
+    rightArm.rotation.z = -0.15;
+    mannequinGroup.add(rightArm);
+
+    // Center Mannequin
+    mannequinGroup.position.y = -1.1;
+    scene.add(mannequinGroup);
+    bodyMesh = mannequinGroup;
+
+    // Load detailed GLTF model if available
     const loader = new GLTFLoader();
     loader.load(
       "/models/human_body.glb",
       (gltf) => {
-        const root = gltf.scene;
+        scene.remove(mannequinGroup);
+        const model = gltf.scene;
 
-        const box = new THREE.Box3().setFromObject(root);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 3.6 / maxDim;
-        root.scale.set(scale, scale, scale);
-        root.position.sub(center.multiplyScalar(scale));
-        root.position.y += 0.05;
-
-        // Clean Realistic Translucent Material
-        root.traverse((child) => {
+        model.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
-            const mesh = child as THREE.Mesh;
-            mesh.material = new THREE.MeshPhysicalMaterial({
-              color: new THREE.Color(0xa7f3d0),
-              emissive: new THREE.Color(0x065f46),
-              emissiveIntensity: 0.1,
-              roughness: 0.35,
-              metalness: 0.05,
-              transmission: 0.35,
-              transparent: true,
-              opacity: 0.9,
-              wireframe: isWireframe,
-            });
+            (child as THREE.Mesh).material = bodyMaterial;
           }
         });
 
-        modelGroup.add(root);
+        // Center and scale GLTF
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 2.4 / maxDim;
+
+        model.scale.setScalar(scale);
+        model.position.sub(center.multiplyScalar(scale));
+        model.position.y = -0.1;
+
+        scene.add(model);
+        bodyMesh = model;
         setIsLoading(false);
       },
       undefined,
-      (error) => {
-        console.warn("Could not load GLB:", error);
+      () => {
         setIsLoading(false);
       }
     );
 
-    // 5. Animation Loop
+    // ANIMATION LOOP
     let animationFrameId: number;
-    const clock = new THREE.Clock();
-
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      const elapsedTime = clock.getElapsedTime();
 
-      if (isRotating) {
-        modelGroup.rotation.y = Math.sin(elapsedTime * 0.3) * 0.28;
+      if (isRotating && bodyMesh) {
+        bodyMesh.rotation.y += 0.005;
       }
-      ringMesh.rotation.z = elapsedTime * 0.02;
 
       controls.update();
       renderer.render(scene, camera);
     };
+
     animate();
 
+    // RESIZE HANDLER
     const handleResize = () => {
       if (!currentMount) return;
       const newWidth = currentMount.clientWidth;
       const newHeight = currentMount.clientHeight;
+
       camera.aspect = newWidth / newHeight;
-      camera.position.z = newWidth < 500 ? 5.2 : 4.6;
       camera.updateProjectionMatrix();
       renderer.setSize(newWidth, newHeight);
     };
+
     window.addEventListener("resize", handleResize);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(animationFrameId);
+      controls.dispose();
+      renderer.dispose();
       if (currentMount && renderer.domElement) {
         currentMount.removeChild(renderer.domElement);
       }
-      renderer.dispose();
     };
   }, [isRotating, isWireframe]);
 
+  const leftOrgans = organsList.filter((o) => ["brain", "lungs", "stomach"].includes(o.id));
+  const rightOrgans = organsList.filter((o) => ["heart", "liver", "kidneys"].includes(o.id));
+
   return (
-    <div className={`relative w-full flex flex-col items-center select-none overflow-visible ${className}`}>
-      {/* 3D Viewport */}
-      <div className="relative w-full h-[460px] sm:h-[500px] lg:h-[540px] overflow-visible">
-        <div ref={mountRef} className="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing touch-none z-0" />
+    <div className={`relative flex items-center justify-center w-full min-h-[500px] lg:min-h-[580px] select-none ${className}`}>
+      {/* Soft mint circular glow backdrop */}
+      <div className="absolute w-[360px] h-[360px] sm:w-[460px] sm:h-[460px] lg:w-[500px] lg:h-[500px] rounded-full border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 -z-10 pointer-events-none" />
 
-        {/* Loading Spinner */}
-        {isLoading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 dark:bg-black/40 backdrop-blur-xs z-30 pointer-events-none">
-            <div className="w-8 h-8 rounded-full border-2 border-emerald-700 border-t-transparent animate-spin mb-2" />
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Loading 3D Anatomy...</span>
-          </div>
-        )}
+      {/* 3D WebGL Canvas Viewport */}
+      <div ref={mountRef} className="w-full h-[480px] sm:h-[540px] lg:h-[580px] cursor-grab active:cursor-grabbing" />
 
-        {/* Subtle Halo Circle */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center -z-10">
-          <div className="w-[340px] h-[340px] sm:w-[420px] sm:h-[420px] rounded-full bg-radial from-emerald-100/40 via-emerald-50/20 to-transparent dark:from-emerald-950/20 dark:to-transparent border border-emerald-100/40 dark:border-emerald-900/30" />
-        </div>
-
-        {/* Organ Callout Badges (Exact Mockup Layout: Circular icon + Name + Green/Amber Status Dot) */}
-        <div className="hidden sm:block absolute inset-0 pointer-events-none z-10 overflow-visible">
-          {organsList.map((organ, index) => {
-            const isSelected = selectedOrganId === organ.id;
+      {/* Organ Callout Badges */}
+      <div className="absolute inset-0 pointer-events-none flex justify-between p-4 sm:p-6">
+        {/* Left Badges (Brain, Lungs, Stomach) */}
+        <div className="flex flex-col justify-around pointer-events-auto">
+          {leftOrgans.map((organ) => {
             const isHovered = hoveredOrgan === organ.id;
-            const anchor = organAnchorPoints[organ.id];
-            const isRightSide = parseInt(organ.screenPos.left) > 50;
-            const isMonitoring = organ.status.toLowerCase().includes("monitor") || organ.id === "heart";
+            const isSelected = selectedOrganId === organ.id;
+            const isOptimal = organ.score >= 82;
 
             return (
-              <motion.div
+              <motion.button
                 key={organ.id}
-                initial={{ scale: 0.85, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1, y: [0, -4, 0] }}
-                transition={{
-                  y: {
-                    duration: 3.5 + (index % 3) * 0.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: index * 0.15,
-                  },
-                  scale: { duration: 0.35, delay: index * 0.1 },
-                  opacity: { duration: 0.35, delay: index * 0.1 },
-                }}
-                style={{
-                  top: organ.screenPos.top,
-                  left: organ.screenPos.left,
-                  transform: "translate(-50%, -50%)",
-                }}
-                className="absolute pointer-events-auto transition-all duration-300 z-10"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onSelectOrgan && onSelectOrgan(organ)}
                 onMouseEnter={() => setHoveredOrgan(organ.id)}
                 onMouseLeave={() => setHoveredOrgan(null)}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white dark:bg-[#112019] border transition-all shadow-xs text-left ${
+                  isSelected || isHovered
+                    ? "border-emerald-600 ring-2 ring-emerald-500/20 shadow-md"
+                    : "border-slate-200/90 dark:border-[#1c3328] hover:border-emerald-400"
+                }`}
               >
-                {/* Connector Dot */}
-                {anchor && (
-                  <div
-                    className={`absolute pointer-events-none transition-opacity duration-300 ${
-                      isHovered || isSelected ? "opacity-100" : "opacity-40"
-                    }`}
-                    style={{
-                      [isRightSide ? "left" : "right"]: "-10px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                    }}
-                  >
-                    <div className={`w-2 h-2 rounded-full ${isMonitoring ? "bg-amber-500" : "bg-emerald-500"} shadow-xs`} />
-                  </div>
-                )}
-
-                {/* Organ Badge Card */}
-                <motion.button
-                  whileHover={{ scale: 1.04, y: -2 }}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => onSelectOrgan?.(organ)}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-sm hover:shadow-md transition-all ${
-                    isSelected ? "ring-2 ring-emerald-600 bg-emerald-50/20" : ""
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center shrink-0">
-                    {organIconMap[organ.id]}
-                  </div>
-                  <div className="text-left whitespace-nowrap pr-1">
-                    <span className="block text-xs font-bold text-slate-900 dark:text-white leading-tight">
-                      {organ.name}
-                    </span>
-                    <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${isMonitoring ? "bg-amber-500" : "bg-emerald-500"}`} />
-                      {organ.status}
-                    </span>
-                  </div>
-                </motion.button>
-              </motion.div>
+                <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center shrink-0">
+                  {organIconMap[organ.id]}
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block">{organ.name}</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
+                    <span className={`w-1.5 h-1.5 rounded-full ${isOptimal ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    {isOptimal ? "Normal" : "Monitoring"} ({organ.score}/100)
+                  </span>
+                </div>
+              </motion.button>
             );
           })}
         </div>
 
-        {/* 3D Canvas Controls Bar */}
-        <div className="absolute bottom-2 left-4 flex items-center gap-1.5 z-20">
-          <button
-            onClick={() => setIsRotating(!isRotating)}
-            className="px-2.5 py-1 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1.5 shadow-2xs"
-          >
-            <RotateCw className={`w-3 h-3 ${isRotating ? "animate-spin text-emerald-600" : ""}`} />
-            <span>{isRotating ? "Auto-Rotate" : "Paused"}</span>
-          </button>
-          <button
-            onClick={() => setIsWireframe(!isWireframe)}
-            className="px-2.5 py-1 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1.5 shadow-2xs"
-          >
-            <Layers className="w-3 h-3 text-slate-500" />
-            <span>{isWireframe ? "Solid" : "Wireframe"}</span>
-          </button>
+        {/* Right Badges (Heart, Liver, Kidneys) */}
+        <div className="flex flex-col justify-around pointer-events-auto items-end">
+          {rightOrgans.map((organ) => {
+            const isHovered = hoveredOrgan === organ.id;
+            const isSelected = selectedOrganId === organ.id;
+            const isOptimal = organ.score >= 82;
+
+            return (
+              <motion.button
+                key={organ.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onSelectOrgan && onSelectOrgan(organ)}
+                onMouseEnter={() => setHoveredOrgan(organ.id)}
+                onMouseLeave={() => setHoveredOrgan(null)}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white dark:bg-[#112019] border transition-all shadow-xs text-left ${
+                  isSelected || isHovered
+                    ? "border-emerald-600 ring-2 ring-emerald-500/20 shadow-md"
+                    : "border-slate-200/90 dark:border-[#1c3328] hover:border-emerald-400"
+                }`}
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center shrink-0">
+                  {organIconMap[organ.id]}
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block">{organ.name}</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
+                    <span className={`w-1.5 h-1.5 rounded-full ${isOptimal ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    {isOptimal ? "Good" : "Monitoring"} ({organ.score}/100)
+                  </span>
+                </div>
+              </motion.button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Mobile Horizontal Tray */}
-      <div className="sm:hidden w-full mt-2 overflow-x-auto pb-2 scrollbar-none">
-        <div className="flex items-center gap-2 min-w-max px-1">
-          {organsList.map((organ) => {
-            const isSelected = selectedOrganId === organ.id;
-            return (
-              <button
-                key={organ.id}
-                onClick={() => onSelectOrgan?.(organ)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all text-left ${
-                  isSelected
-                    ? "bg-[#1b4332] text-white border-[#1b4332]"
-                    : "bg-white dark:bg-[#112019] border-slate-200 dark:border-[#1c3328] text-slate-800 dark:text-slate-200"
-                }`}
-              >
-                <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                  {organIconMap[organ.id]}
-                </div>
-                <div className="pr-1">
-                  <span className="block text-xs font-bold leading-tight">{organ.name}</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{organ.status}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      {/* Floating Controls Bar */}
+      <div className="absolute bottom-4 flex items-center gap-2 p-1.5 rounded-2xl bg-white/90 dark:bg-[#112019]/90 border border-slate-200/80 dark:border-[#1c3328] shadow-xs backdrop-blur-xs">
+        <button
+          onClick={() => setIsRotating(!isRotating)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            isRotating
+              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <RotateCw className="w-3.5 h-3.5" />
+          <span>Auto-Rotate</span>
+        </button>
+
+        <button
+          onClick={() => setIsWireframe(!isWireframe)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            isWireframe
+              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Wireframe</span>
+        </button>
       </div>
     </div>
   );

@@ -14,234 +14,176 @@ import {
   Sparkles,
   ChevronRight,
   ShieldCheck,
+  Stethoscope,
+  CheckCircle2,
 } from "lucide-react";
-import { initialPatientTwin } from "@/data/mockPatient";
 import { OrganBadge } from "@/components/ui/OrganBadge";
+import { useAuth } from "@/context/AuthContext";
 
-interface PatientSummary {
-  id: string;
-  name: string;
-  age: number;
-  gender: string;
-  score: number;
-  riskStatus: "MODERATE" | "HIGH" | "OPTIMAL";
-  lastVisit: string;
-  flaggedOrgan: string;
-}
-
-const mockPatientList: PatientSummary[] = [
-  {
-    id: "pt_1029384",
-    name: "Alex Mercer",
-    age: 38,
-    gender: "Male",
-    score: 87,
-    riskStatus: "MODERATE",
-    lastVisit: "Aug 15, 2026",
-    flaggedOrgan: "Heart & Pancreas (Monitoring)",
-  },
-  {
-    id: "pt_2039485",
-    name: "Elena Rostova",
-    age: 52,
-    gender: "Female",
-    score: 72,
-    riskStatus: "HIGH",
-    lastVisit: "Aug 02, 2026",
-    flaggedOrgan: "Cardiovascular (High Risk)",
-  },
-  {
-    id: "pt_3049586",
-    name: "Marcus Vance",
-    age: 29,
-    gender: "Male",
-    score: 94,
-    riskStatus: "OPTIMAL",
-    lastVisit: "Jul 18, 2026",
-    flaggedOrgan: "All Systems Optimal",
-  },
-];
-
-export default function DoctorPortalPage() {
-  const [selectedPatientId, setSelectedPatientId] = useState<string>("pt_1029384");
-  const [clinicalNotes, setClinicalNotes] = useState<string>(
-    "Patient exhibits borderline systolic hypertension (128 mmHg) and early pre-diabetic fasting glucose (108 mg/dL). Recommended 30 minutes of aerobic exercise 5x weekly and sodium restriction. Scheduled for a 3-month follow-up metabolic panel."
+export default function DoctorReviewPage() {
+  const { user, twin } = useAuth();
+  const [selectedPatientId, setSelectedPatientId] = useState<string>(user?.patientId || "pt_primary");
+  const [physicianNote, setPhysicianNote] = useState<string>(
+    `Patient exhibits balanced physiological parameters (BP ${user?.bloodPressure || "120/80"}, Glucose ${user?.fastingGlucose || 95} mg/dL). Continued aerobic conditioning and routine follow-up recommended.`
   );
+  const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  const selectedPatient =
-    mockPatientList.find((p) => p.id === selectedPatientId) || mockPatientList[0];
+  const patientName = user?.name || "Patient";
+  const patientId = user?.patientId || "pt_primary";
+  const score = twin.overallScore;
+  const organs = Object.values(twin.organs);
 
-  const handleSaveNotes = () => {
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
+  const handleSaveDirective = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    }, 600);
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Doctor Portal Header */}
-      <div className="glass-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12 py-8 space-y-8 transition-colors duration-300">
+      {/* Header */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-sky-600 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-200">
-              Clinician Review Portal
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
+              Clinician Review Studio
             </span>
-            <span className="text-xs text-slate-400">Dr. Sarah Jenkins, MD (Cardiology)</span>
+            <span className="text-xs text-slate-400 font-mono">Dr. Sarah Jenkins, MD (Attending)</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 mt-1">Patient Digital Twin Review</h1>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-xl">
-            Review patient multi-organ telemetries, validate AI-extracted laboratory findings, and append clinical observations.
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1 font-serif">
+            Physician Governance & Care Directives
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            Review patient digital twins, override machine learning risk scores, and publish signed FHIR care plans.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-white border border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            HIPAA Clinical Session Active
-          </div>
+        <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+          <Stethoscope className="w-4 h-4 text-emerald-600" />
+          <span>FHIR HL7 Synchronized</span>
         </div>
       </div>
 
-      {/* Main Layout: Patient Directory (4 Cols) + Patient Clinical View (8 Cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Patient Directory */}
-        <div className="lg:col-span-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900">Assigned Cohort (3)</h3>
-            <span className="text-xs text-slate-400">Cardiology Clinic A</span>
-          </div>
+      {/* Main Split Studio */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Active Patient Summary (5 Cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Active Patient Registry (1)
+          </h3>
 
-          <div className="space-y-2.5">
-            {mockPatientList.map((pt) => {
-              const isSelected = selectedPatientId === pt.id;
-              return (
-                <div
-                  key={pt.id}
-                  onClick={() => setSelectedPatientId(pt.id)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-white border-blue-500 shadow-md ring-2 ring-blue-500/10"
-                      : "glass-card hover:bg-white/90 border-slate-200/70"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900">{pt.name}</h4>
-                      <p className="text-[11px] text-slate-500">
-                        {pt.age} yrs • {pt.gender} • ID: {pt.id}
-                      </p>
-                    </div>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        pt.riskStatus === "HIGH"
-                          ? "bg-rose-100 text-rose-800"
-                          : pt.riskStatus === "MODERATE"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-emerald-100 text-emerald-800"
-                      }`}
-                    >
-                      {pt.riskStatus}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500">{pt.flaggedOrgan}</span>
-                    <span className="font-bold text-blue-600">Score: {pt.score}/100</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Selected Patient Clinical Detail & Notes */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Patient Header */}
-          <div className="glass-card rounded-3xl p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div className="p-6 rounded-3xl bg-emerald-50/50 dark:bg-emerald-950/30 border-2 border-emerald-600/70 shadow-xs space-y-4">
+            <div className="flex items-start justify-between">
               <div>
-                <span className="text-xs font-bold uppercase text-blue-600">Selected Patient File</span>
-                <h2 className="text-xl font-extrabold text-slate-900 mt-0.5">
-                  {selectedPatient.name} ({selectedPatient.age}M)
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Last Synced: {selectedPatient.lastVisit} • Health Score:{" "}
-                  <strong className="text-blue-600">{selectedPatient.score}/100</strong>
+                <span className="text-[10px] font-mono text-emerald-800 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full">
+                  ID: #{patientId}
+                </span>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-white mt-1.5">{patientName}</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {user?.age || 26} yrs • {user?.gender || "Male"} • Blood Type: {user?.bloodGroup || "B+"}
                 </p>
               </div>
 
+              <div className="text-right">
+                <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">{score}</span>
+                <span className="text-xs text-slate-400">/100</span>
+                <span className="block text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Optimal</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-emerald-200/60 dark:border-[#1c3328] text-xs">
+              <div className="p-3 rounded-2xl bg-white dark:bg-[#112019] border border-slate-200/70 dark:border-[#1c3328]">
+                <span className="text-slate-400 text-[10px] block">Blood Pressure</span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono">{user?.bloodPressure || "120/80"}</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-white dark:bg-[#112019] border border-slate-200/70 dark:border-[#1c3328]">
+                <span className="text-slate-400 text-[10px] block">Fasting Glucose</span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono">{user?.fastingGlucose || 95} mg/dL</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Organ Vitality Breakdown for Doctor */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Multiorgan Homeostasis Telemetry
+            </h4>
+
+            <div className="space-y-2.5">
+              {organs.map((organ) => (
+                <div key={organ.id} className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611]">
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{organ.name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{organ.score}/100</span>
+                    <OrganBadge status={organ.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Physician Directive Form & Signing (7 Cols) */}
+        <div className="lg:col-span-7 p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-6 shadow-2xs">
+          <div className="border-b border-slate-100 dark:border-[#1c3328] pb-4">
+            <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">
+              Clinical Directive Studio
+            </span>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-1 font-serif">
+              Publish Signed Physician Plan for {patientName}
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Directives written here sync immediately to the patient&apos;s digital twin and mobile dashboard.
+            </p>
+          </div>
+
+          <form onSubmit={handleSaveDirective} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Clinical Note & Lifestyle Prescription
+              </label>
+              <textarea
+                rows={5}
+                required
+                value={physicianNote}
+                onChange={(e) => setPhysicianNote(e.target.value)}
+                className="w-full p-4 rounded-2xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#0c1611] text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none leading-relaxed"
+              />
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/60 dark:border-[#1c3328] flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                  Status: Monitoring Required
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  Cryptographic Signature: Dr. Sarah Jenkins (NPI #198273645)
                 </span>
               </div>
+              <span className="text-[11px] text-slate-400 font-mono">TLS 1.3 Verified</span>
             </div>
-
-            {/* Quick Organ Overview */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Heart System</span>
-                <p className="text-xs font-bold text-slate-800 mt-1">128/82 mmHg</p>
-                <OrganBadge status="Monitoring" className="mt-1" />
-              </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Pancreas</span>
-                <p className="text-xs font-bold text-slate-800 mt-1">108 mg/dL</p>
-                <OrganBadge status="Monitoring" className="mt-1" />
-              </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Lungs</span>
-                <p className="text-xs font-bold text-slate-800 mt-1">99% SpO2</p>
-                <OrganBadge status="Good" className="mt-1" />
-              </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Kidneys</span>
-                <p className="text-xs font-bold text-slate-800 mt-1">0.88 Cr / 108 eGFR</p>
-                <OrganBadge status="Normal" className="mt-1" />
-              </div>
-            </div>
-          </div>
-
-          {/* Clinical Notes & Prescriptions Editor */}
-          <div className="glass-card rounded-3xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600" />
-                Doctor Clinical Annotations & Orders
-              </h3>
-              <span className="text-xs text-slate-400">Appended to Patient Digital Twin</span>
-            </div>
-
-            <textarea
-              rows={4}
-              value={clinicalNotes}
-              onChange={(e) => setClinicalNotes(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs leading-relaxed"
-            />
 
             <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-slate-400">
-                AI assistance: Summaries are separated from physician-signed notes.
-              </span>
+              {isSaved && (
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 animate-in fade-in">
+                  <CheckCircle2 className="w-4 h-4" /> Directive signed and synced to live twin!
+                </span>
+              )}
+              {!isSaved && <div />}
 
               <button
-                onClick={handleSaveNotes}
-                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 flex items-center gap-1.5 transition-all"
+                type="submit"
+                disabled={isSaving}
+                className="px-6 py-3 rounded-2xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 text-white font-bold text-xs shadow-sm flex items-center gap-2 transition-all"
               >
-                {isSaved ? (
-                  <>
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    Saved to Patient Twin!
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-3.5 h-3.5" />
-                    Save & Sign Notes
-                  </>
-                )}
+                <Save className="w-4 h-4" />
+                <span>{isSaving ? "Publishing Directive..." : "Sign & Publish Directive"}</span>
               </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   Send,
@@ -12,7 +12,9 @@ import {
   ArrowRight,
   ExternalLink,
   Heart,
+  Activity,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface Message {
   id: string;
@@ -22,51 +24,37 @@ interface Message {
   timestamp: string;
 }
 
-const initialMessages: Message[] = [
-  {
-    id: "msg_1",
-    sender: "ASSISTANT",
-    text: "Hello Hriday! I am your Digital Twin Clinical AI Assistant powered by Google Gemini. I have indexed your clinical records and continuous biometric stream. How can I help you understand your physiological state today?",
-    timestamp: "10:00 AM",
-  },
-  {
-    id: "msg_2",
-    sender: "USER",
-    text: "Why is my heart marked under 'Monitoring' on the 3D twin, and what are the main factors?",
-    timestamp: "10:02 AM",
-  },
-  {
-    id: "msg_3",
-    sender: "ASSISTANT",
-    text: "Your Heart node is currently flagged for **Monitoring** due to two primary biomarkers:\n\n1. **Blood Pressure:** Your recent readings average `128/82 mmHg`, placing you in the elevated pre-hypertension band.\n2. **Lipid Profile:** Your Total Cholesterol was measured at `208 mg/dL` (borderline elevated, standard reference `< 200 mg/dL`) with an LDL level of `128 mg/dL`.\n\nCombined with family history, our predictive model calculates a 10-year Cardiovascular Disease risk of **14.2% (Moderate)**. \n\n*Actionable Guidance:* 30-45 mins of daily Zone-2 cardio and lowering dietary sodium can help normalize your systolic pressure.",
-    citations: [
-      { title: "Comprehensive Metabolic & Lipid Panel", date: "Aug 15, 2026", recordId: "rec_001" },
-      { title: "12-Lead Electrocardiogram (ECG)", date: "Jul 02, 2026", recordId: "rec_002" },
-    ],
-    timestamp: "10:02 AM",
-  },
-];
-
 const quickPrompts = [
-  "Summarize my recent blood report",
-  "How can I lower my fasting glucose naturally?",
-  "What questions should I ask Dr. Sarah Jenkins?",
+  "Summarize my physiological digital twin status",
+  "How can I optimize my blood pressure naturally?",
+  "What questions should I ask my physician?",
   "Explain my composite health score breakdown",
 ];
 
 export default function AssistantPage() {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const { user, twin, records } = useAuth();
+  const patientName = user?.name || "Patient";
+
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "msg_init",
+      sender: "ASSISTANT",
+      text: `Hello ${patientName}! I am your Digital Twin Clinical AI Assistant powered by Google Gemini. I have indexed your biometrics (BP ${user?.bloodPressure || "120/80"}, Glucose ${user?.fastingGlucose || 95} mg/dL, Twin Score ${twin.overallScore}/100) and ${records.length} clinical records. How can I assist you with your health today?`,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    },
+  ]);
+
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  const handleSend = async (textToSend?: string) => {
-    const text = textToSend || inputValue;
-    if (!text.trim()) return;
+  const handleSendMessage = async (textToSend?: string) => {
+    const query = textToSend || inputValue;
+    if (!query.trim()) return;
 
     const userMsg: Message = {
       id: `usr_${Date.now()}`,
       sender: "USER",
-      text,
+      text: query,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
@@ -75,170 +63,224 @@ export default function AssistantPage() {
     setIsTyping(true);
 
     try {
-      const res = await fetch("/api/assistant", {
+      const response = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text }),
+        body: JSON.stringify({
+          query,
+          patientContext: {
+            name: patientName,
+            age: user?.age || 26,
+            gender: user?.gender || "Male",
+            bloodPressure: user?.bloodPressure || "120/80",
+            fastingGlucose: user?.fastingGlucose || 95,
+            overallScore: twin.overallScore,
+            recordsCount: records.length,
+            recentRecords: records.map((r) => ({ title: r.title, date: r.date, summary: r.aiSummary })),
+          },
+        }),
       });
-      const json = await res.json();
 
-      if (json.success && json.data) {
-        const aiReply: Message = {
-          id: `ai_${Date.now()}`,
-          sender: "ASSISTANT",
-          text: json.data.reply,
-          citations: json.data.citations,
-          timestamp: json.data.timestamp || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
-        setMessages((prev) => [...prev, aiReply]);
-      } else {
-        throw new Error(json.error || "AI Service unavailable");
-      }
-    } catch (err: any) {
-      const fallbackReply: Message = {
+      const data = await response.json();
+
+      const aiMsg: Message = {
         id: `ai_${Date.now()}`,
         sender: "ASSISTANT",
-        text: `Based on your digital twin records regarding "${text}":\n\nYour clinical parameters reflect an overall Health Score of **87/100 (Optimal)**. Fasting blood glucose (108 mg/dL) and systolic BP (128 mmHg) are the primary areas for lifestyle optimization.`,
-        citations: [{ title: "Diagnostic Vault Index", date: "Aug 2026", recordId: "rec_001" }],
+        text:
+          data.reply ||
+          `Based on your Digital Twin parameters, your vitals and organ scores are in the ${twin.overallScore >= 82 ? "optimal" : "monitoring"} band. Continue adhering to your lifestyle regimen.`,
+        citations: data.citations || [],
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
-      setMessages((prev) => [...prev, fallbackReply]);
+
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      const fallbackMsg: Message = {
+        id: `ai_${Date.now()}`,
+        sender: "ASSISTANT",
+        text: `Your current biometric readings show Blood Pressure at **${user?.bloodPressure || "120/80"}** and Fasting Glucose at **${user?.fastingGlucose || 95} mg/dL**, yielding a healthy Twin Vitality Score of **${twin.overallScore}/100**. Keep maintaining regular aerobic exercise and balanced nutrition.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages((prev) => [...prev, fallbackMsg]);
     } finally {
       setIsTyping(false);
     }
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8 h-[calc(100vh-140px)] flex flex-col transition-colors duration-300">
-      {/* Header */}
-      <div className="p-5 mb-4 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[#1b4332] dark:bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-            <Bot className="w-5 h-5" />
+    <div className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12 py-8 space-y-6 transition-colors duration-300">
+      {/* Studio Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-xs">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
+              Google Gemini 1.5 Clinical AI
+            </span>
+            <span className="text-xs text-slate-400 font-mono">Patient: {patientName}</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-900 dark:text-white">Gemini Clinical AI Assistant</h1>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Grounded on 24 Records • Gemini 1.5
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Conversational exploration with real-time biometric grounding</p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1 font-serif">
+            Digital Twin AI Assistant
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            Ask questions grounded directly in your personal biomarkers, records, and 3D physiological models.
+          </p>
         </div>
 
-        <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
-          <ShieldAlert className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>Clinical Safety Guardrails Active</span>
+        <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-4 py-2 rounded-2xl border border-emerald-200 dark:border-emerald-900">
+          <Sparkles className="w-4 h-4 text-emerald-600" />
+          <span>Biometric Grounding Active</span>
         </div>
       </div>
 
-      {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto space-y-4 p-4 sm:p-6 rounded-3xl bg-white/70 dark:bg-[#0e1a14]/70 border border-slate-200/80 dark:border-[#1c3328] mb-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex gap-3 max-w-3xl ${msg.sender === "USER" ? "ml-auto flex-row-reverse" : "mr-auto"}`}
-          >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
-                msg.sender === "USER"
-                  ? "bg-[#1b4332] text-white"
-                  : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900"
-              }`}
-            >
-              {msg.sender === "USER" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-            </div>
-
-            <div
-              className={`p-4 rounded-3xl text-xs sm:text-sm leading-relaxed space-y-2 ${
-                msg.sender === "USER"
-                  ? "bg-[#1b4332] text-white rounded-tr-xs"
-                  : "bg-white dark:bg-[#112019] text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-[#1c3328] rounded-tl-xs shadow-2xs"
-              }`}
-            >
-              <div className="whitespace-pre-line">{msg.text}</div>
-
-              {msg.citations && msg.citations.length > 0 && (
-                <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Grounded Diagnostic Sources:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {msg.citations.map((cit, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200/80 dark:border-emerald-900/50"
-                      >
-                        <span>{cit.title}</span>
-                        <span className="text-[10px] opacity-60">({cit.date})</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <span
-                className={`text-[10px] block text-right ${
-                  msg.sender === "USER" ? "text-emerald-200" : "text-slate-400"
-                }`}
+      {/* Main Chat Box */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Chat History & Input (8 Cols) */}
+        <div className="lg:col-span-8 p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-xs flex flex-col h-[640px]">
+          {/* Scrollable Messages Area */}
+          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex gap-3 ${msg.sender === "USER" ? "justify-end" : "justify-start"}`}
               >
-                {msg.timestamp}
-              </span>
-            </div>
-          </div>
-        ))}
+                {msg.sender === "ASSISTANT" && (
+                  <div className="w-8 h-8 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 text-xs shadow-xs">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                )}
 
-        {isTyping && (
-          <div className="flex gap-3 max-w-xl mr-auto">
-            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center shrink-0">
-              <Bot className="w-4 h-4" />
-            </div>
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#112019] border border-slate-200/80 dark:border-[#1c3328] flex items-center gap-1.5 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce" />
-              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce [animation-delay:0.2s]" />
-              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce [animation-delay:0.4s]" />
-              <span className="text-xs text-slate-400 ml-1">Gemini AI synthesizing twin telemetry...</span>
-            </div>
-          </div>
-        )}
-      </div>
+                <div
+                  className={`max-w-xl p-4 rounded-3xl text-xs sm:text-sm leading-relaxed space-y-2 ${
+                    msg.sender === "USER"
+                      ? "bg-[#1b4332] dark:bg-emerald-600 text-white rounded-tr-none shadow-xs"
+                      : "bg-slate-50 dark:bg-[#0c1611] text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200/70 dark:border-[#1c3328]"
+                  }`}
+                >
+                  <p className="whitespace-pre-line">{msg.text}</p>
 
-      {/* Suggested Quick Prompts */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none mb-2">
-        <span className="text-[11px] font-semibold text-slate-400 shrink-0 flex items-center gap-1">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-          Suggested:
-        </span>
-        {quickPrompts.map((prompt, i) => (
-          <button
-            key={i}
-            onClick={() => handleSend(prompt)}
-            className="px-3 py-1.5 rounded-full bg-white dark:bg-[#112019] border border-slate-200 dark:border-[#1c3328] hover:border-emerald-600 text-slate-700 dark:text-slate-300 text-xs font-medium whitespace-nowrap transition-all shadow-2xs"
+                  {/* Citations */}
+                  {msg.citations && msg.citations.length > 0 && (
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-[#1c3328] space-y-1">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">
+                        Evidence Sources:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.citations.map((cite, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-[#112019] border border-slate-200 dark:border-[#1c3328] text-[10px] font-semibold text-emerald-800 dark:text-emerald-400"
+                          >
+                            <ExternalLink className="w-2.5 h-2.5" />
+                            {cite.title}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <span
+                    className={`block text-[10px] text-right ${
+                      msg.sender === "USER" ? "text-emerald-200" : "text-slate-400"
+                    }`}
+                  >
+                    {msg.timestamp}
+                  </span>
+                </div>
+
+                {msg.sender === "USER" && (
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-white flex items-center justify-center shrink-0 text-xs font-bold shadow-xs">
+                    {patientName[0]}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {isTyping && (
+              <div className="flex gap-3 justify-start">
+                <div className="w-8 h-8 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 text-xs">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div className="p-4 rounded-3xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/70 dark:border-[#1c3328] text-xs text-slate-500 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+                  Gemini is analyzing {patientName}&apos;s continuous telemetry...
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Chat Input */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className="pt-4 border-t border-slate-100 dark:border-[#1c3328] flex items-center gap-2"
           >
-            {prompt}
-          </button>
-        ))}
-      </div>
+            <input
+              type="text"
+              placeholder={`Ask Gemini about ${patientName}'s biometrics, reports, or care plan...`}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="flex-1 px-4 py-3 rounded-2xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#0c1611] text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+            />
+            <button
+              type="submit"
+              disabled={!inputValue.trim() || isTyping}
+              className="p-3 rounded-2xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 text-white disabled:opacity-40 transition-all shadow-xs"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
 
-      {/* Input Bar */}
-      <div className="relative">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Ask anything about your organs, lab biomarkers, blood pressure, or lifestyle plans..."
-          className="w-full pl-4 pr-12 py-3.5 rounded-2xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#112019] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all shadow-xs"
-        />
-        <button
-          onClick={() => handleSend()}
-          disabled={!inputValue.trim() || isTyping}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-[#1b4332] dark:bg-emerald-600 text-white disabled:opacity-40 hover:bg-[#14382c] transition-colors shadow-xs"
-        >
-          <Send className="w-4 h-4" />
-        </button>
+        {/* Right Column: Grounded Biometrics & Quick Prompts (4 Cols) */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Grounded Vitals Card */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Grounded Physiological Stream
+            </h3>
+
+            <div className="space-y-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Blood Pressure</span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono">{user?.bloodPressure || "120/80"} mmHg</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Fasting Glucose</span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono">{user?.fastingGlucose || 95} mg/dL</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Twin Vitality Score</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400 font-mono">{twin.overallScore}/100</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Indexed Reports</span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono">{records.length} Documents</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Suggested Quick Prompts */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] space-y-3 shadow-2xs">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Suggested Questions
+            </h3>
+
+            <div className="space-y-2">
+              {quickPrompts.map((prompt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSendMessage(prompt)}
+                  className="w-full text-left p-3 rounded-2xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200/60 dark:border-[#1c3328] text-xs font-semibold text-slate-700 dark:text-slate-300 hover:border-emerald-600 hover:text-emerald-700 dark:hover:text-emerald-400 transition-all flex items-center justify-between group"
+                >
+                  <span className="line-clamp-1">{prompt}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
