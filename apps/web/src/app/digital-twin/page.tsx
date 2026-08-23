@@ -56,7 +56,7 @@ export default function DigitalTwinPage() {
             {patientName}&apos;s Interactive Digital Twin
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Real-time anatomical model dynamically calibrated by your clinical biomarkers and physiological sensors.
+            Real-time anatomical model dynamically calibrated by your clinical biomarkers and uploaded laboratory reports.
           </p>
         </div>
 

@@ -190,7 +190,7 @@ export const OrganDetailModal: React.FC<OrganDetailModalProps> = ({ organ, onClo
             {/* Footer Actions */}
             <div className="p-3.5 sm:p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between gap-3">
               <span className="hidden sm:inline text-xs text-slate-400 dark:text-slate-500">
-                Based on 24 validated laboratory & wearable telemetry records
+                Based on validated clinical laboratory & diagnostic biomarkers
               </span>
               <motion.button
                 whileHover={{ scale: 1.02 }}

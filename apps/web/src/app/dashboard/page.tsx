@@ -204,14 +204,14 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-bold text-slate-900 dark:text-white font-serif">
-                24-Hour Continuous Telemetry
+                Daily Physiological Projection
               </h3>
               <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
-                Live Feed
+                AI Modeled
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Calibrated to {patientName}&apos;s baseline biometrics
+              Circadian baseline calibrated from {patientName}&apos;s lab reports
             </p>
           </div>
 

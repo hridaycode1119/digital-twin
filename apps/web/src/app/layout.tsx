@@ -7,8 +7,8 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { ScrollProgress } from "@/components/ui/ScrollProgress";
 
 export const metadata: Metadata = {
-  title: "Digital Twin — AI-Powered Healthcare Avatar & Telemetry",
-  description: "Create your digital twin, track your health in real-time, predict risks, and receive personalized insights.",
+  title: "Digital Twin — AI-Powered 3D Virtual Patient & Health Intelligence",
+  description: "Synthesize clinical lab reports, predict disease risks, and simulate multi-organ health with zero hardware or devices required.",
 };
 
 export default function RootLayout({
