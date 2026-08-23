@@ -1343,17 +1343,57 @@ export default function DashboardPage() {
             />
 
             {!uploadedFile ? (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 dark:border-[#223d30] hover:border-emerald-500 rounded-3xl p-8 text-center cursor-pointer transition-all bg-slate-50/60 dark:bg-[#0c1611]/60"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 mx-auto flex items-center justify-center mb-3">
-                  <UploadCloud className="w-7 h-7" />
+              <div className="space-y-3">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-300 dark:border-[#223d30] hover:border-emerald-500 rounded-3xl p-7 text-center cursor-pointer transition-all bg-slate-50/60 dark:bg-[#0c1611]/60"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 mx-auto flex items-center justify-center mb-2.5">
+                    <UploadCloud className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Click to browse or drop your lab document here
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1">Supports PDF, PNG, JPG, TXT, CSV (Max 25MB)</p>
                 </div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Click to browse or drop your lab PDF here
-                </h4>
-                <p className="text-xs text-slate-400 mt-1">Supports PDF, PNG, JPG (Max 25MB)</p>
+
+                {/* Demo Sample Patient File Quick Loader */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 dark:text-emerald-300">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Need a test file to demonstrate?</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Includes BP (134/86), Glucose (114 mg/dL), Cholesterol (218 mg/dL), Creatinine, CBC.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <a
+                      href="/sample_patient_lab_report.txt"
+                      download="sample_patient_lab_report.txt"
+                      className="px-2.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/50"
+                    >
+                      Download TXT
+                    </a>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch("/sample_patient_lab_report.txt");
+                          const blob = await res.blob();
+                          const testFile = new File([blob], "sample_patient_lab_report.txt", { type: "text/plain" });
+                          handleFileUpload(testFile);
+                        } catch (e) {
+                          console.error("Could not load sample file:", e);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-bold shadow-xs flex items-center gap-1"
+                    >
+                      <span>⚡ Load Demo File</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 flex items-center gap-3">

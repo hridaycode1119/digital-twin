@@ -1,0 +1,84 @@
+================================================================================
+METRO HEALTH CLINICAL DIAGNOSTIC LABORATORIES
+Accreditation: CLIA #99D0876543 | CAP Accredited #1847291
+Address: 450 Medical Center Boulevard, Suite 300
+================================================================================
+OFFICIAL DIAGNOSTIC LABORATORY REPORT & CLINICAL BIOCHEMISTRY RECORD
+
+PATIENT DEMOGRAPHICS & SPECIMEN INFORMATION:
+--------------------------------------------------------------------------------
+Patient Name      : Alex Morgan                MRN / Patient ID  : #PT-849201
+Date of Birth     : 14-MAY-1988 (Age: 38)      Gender            : Male
+Ordering Physician: Dr. Marcus Vance, MD       Department        : Internal Medicine
+Collection Date   : 24-AUG-2026 08:30 AM       Reporting Date    : 24-AUG-2026 11:15 AM
+Specimen Type     : Venous Whole Blood / Serum Ingestion Protocol: LOINC Standardized
+================================================================================
+
+1. HEMODYNAMICS & VITAL SIGNS:
+--------------------------------------------------------------------------------
+TEST COMPONENT               RESULT      UNIT     REFERENCE RANGE     STATUS
+Blood Pressure (BP)          134/86      mmHg     < 120/80            ELEVATED (Pre-Hypertensive)
+Resting Heart Rate (Pulse)   76          BPM      60 - 80             NORMAL
+Body Mass Index (BMI)        24.6        kg/m²    18.5 - 24.9         NORMAL
+Oxygen Saturation (SpO2)     99          %        95 - 100            OPTIMAL
+
+2. COMPREHENSIVE METABOLIC & GLYCEMIC PANEL:
+--------------------------------------------------------------------------------
+TEST COMPONENT               RESULT      UNIT     REFERENCE RANGE     STATUS
+Fasting Blood Glucose        114         mg/dL    70 - 99             ELEVATED (Impaired Glucose)
+HbA1c (Glycated Hemoglobin)  5.8         %        < 5.7               ELEVATED (Pre-Diabetes Index)
+Estimated Avg Glucose (eAG)  120         mg/dL    < 117               ELEVATED
+
+3. LIPID & ATHEROGENIC FRACTIONS:
+--------------------------------------------------------------------------------
+TEST COMPONENT               RESULT      UNIT     REFERENCE RANGE     STATUS
+Total Cholesterol            218         mg/dL    125 - 200           ELEVATED
+HDL Cholesterol (Protective) 46          mg/dL    > 45                NORMAL
+LDL Cholesterol (Atherogenic)138         mg/dL    < 100               ELEVATED
+Serum Triglycerides          168         mg/dL    < 150               ELEVATED
+Non-HDL Cholesterol          172         mg/dL    < 130               ELEVATED
+Total / HDL Ratio            4.74        ratio    < 4.5               ELEVATED
+
+4. RENAL FILTRATION & ELECTROLYTE PANEL:
+--------------------------------------------------------------------------------
+TEST COMPONENT               RESULT      UNIT     REFERENCE RANGE     STATUS
+Serum Creatinine             0.98        mg/dL    0.6 - 1.2           NORMAL
+eGFR (Glomerular Filtration) 102         mL/min   > 90                OPTIMAL
+Blood Urea Nitrogen (BUN)    16          mg/dL    7 - 20              NORMAL
+Serum Sodium (Na)            141         mEq/L    135 - 145           NORMAL
+Serum Potassium (K)          4.4         mEq/L    3.5 - 5.0           NORMAL
+
+5. COMPLETE HEMOGRAM & HEMATOLOGY (CBC):
+--------------------------------------------------------------------------------
+TEST COMPONENT               RESULT      UNIT     REFERENCE RANGE     STATUS
+Hemoglobin (Hb)              15.2        g/dL     13.5 - 17.5         NORMAL
+Hematocrit (HCT)             45.8        %        38.8 - 50.0         NORMAL
+Platelet Count               235         10^3/uL  150 - 450           NORMAL
+White Blood Cell Count (WBC) 6.9         10^3/uL  4.5 - 11.0          NORMAL
+Red Blood Cell Count (RBC)   5.10        10^6/uL  4.3 - 5.9           NORMAL
+
+6. HEPATIC FUNCTION & ENZYMES:
+--------------------------------------------------------------------------------
+TEST COMPONENT               RESULT      UNIT     REFERENCE RANGE     STATUS
+ALT (Alanine Transferase)    28          U/L      7 - 56              NORMAL
+AST (Aspartate Transferase)  24          U/L      10 - 40             NORMAL
+Total Bilirubin              0.8         mg/dL    0.1 - 1.2           NORMAL
+Serum Albumin                4.5         g/dL     3.5 - 5.5           NORMAL
+
+================================================================================
+CLINICAL PATHOLOGIST IMPRESSION & AI DIAGNOSTIC SYNTHESIS:
+--------------------------------------------------------------------------------
+Findings indicate early metabolic strain characterized by elevated fasting blood
+glucose (114 mg/dL) and pre-hypertensive hemodynamic pressure (134/86 mmHg).
+Lipid profile reflects atherogenic dyslipidemia with LDL at 138 mg/dL and elevated
+triglycerides at 168 mg/dL. Renal filtration (eGFR 102 mL/min) and hematologic
+indices remain robust and well-preserved.
+
+RECOMMENDED CLINICAL PROTOCOL:
+1. Initiate low-glycemic dietary intervention and post-meal Zone-1 walks.
+2. Moderate sodium intake (< 1,800 mg/day) and structured Zone-2 cardio training.
+3. Repeat Comprehensive Metabolic Panel in 90 days.
+================================================================================
+Electronically Verified by: Dr. Evelyn Reed, MD, FACP (Chief Pathologist)
+LOINC Standardized Medical EHR Transmission #EHR-99281-2026
+================================================================================
