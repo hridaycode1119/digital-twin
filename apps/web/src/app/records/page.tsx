@@ -72,10 +72,56 @@ export default function RecordsPage() {
     }
   };
 
-  const handleProcessFileUpload = () => {
+  const handleProcessFileUpload = async () => {
     if (!uploadedFile && !reportTitle) return;
 
     setUploadStep("SCANNING");
+
+    try {
+      if (uploadedFile) {
+        const formData = new FormData();
+        formData.append("file", uploadedFile);
+        formData.append("title", reportTitle || uploadedFile.name);
+
+        const res = await fetch("/api/records/parse", {
+          method: "POST",
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (json.success && json.data) {
+          setUploadStep("NORMALIZING");
+          setTimeout(() => {
+            setUploadStep("COMPLETE");
+            const d = json.data;
+
+            addRecord({
+              title: d.title || reportTitle || uploadedFile.name,
+              category: d.category || reportCategory,
+              date: d.date || new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+              facility: d.facility || reportFacility,
+              status: "VERIFIED",
+              abnormalCount: d.abnormalCount || 0,
+              extractedValues: d.extractedValues || [],
+              aiSummary: d.aiSummary || `Deep optical extraction normalized ${d.extractedValues?.length || 0} biomarkers.`,
+              doctorQuestions: d.doctorQuestions || [
+                "How do these updated values compare against my baseline 3D twin projection?",
+              ],
+            });
+
+            setTimeout(() => {
+              setUploadStep("IDLE");
+              setUploadedFile(null);
+              setReportTitle("");
+              setShowUploadModal(false);
+            }, 600);
+          }, 600);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Records parse error, falling back to local extractor:", e);
+    }
 
     setTimeout(() => {
       setUploadStep("NORMALIZING");
