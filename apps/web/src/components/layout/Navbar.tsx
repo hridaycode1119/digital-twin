@@ -9,7 +9,6 @@ import {
   ChevronDown,
   Menu,
   X,
-  Sparkles,
   Heart,
   ChevronRight,
 } from "lucide-react";
@@ -30,12 +29,12 @@ export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
-  const { isLoggedIn, user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 w-full glass-nav transition-colors duration-300 bg-white/95 dark:bg-[#0b1410]/95 border-b border-[#eef1f0] dark:border-[#1c3328]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        {/* Brand Logo & Tagline (Matching Mockup) */}
+      <div className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12 h-20 flex items-center justify-between">
+        {/* Brand Logo & Tagline */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-2xl border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-700 dark:text-emerald-400">
             <Heart className="w-5 h-5 fill-emerald-600/20" />
@@ -50,7 +49,7 @@ export const Navbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Center Navigation Links (Matching Mockup) */}
+        {/* Center Navigation Links */}
         <nav className="hidden lg:flex items-center gap-8 text-sm font-medium">
           {navLinks.map((link) => {
             const isActive =
@@ -115,12 +114,11 @@ export const Navbar: React.FC = () => {
           </div>
         </nav>
 
-        {/* Right Section: Notification, Profile, Theme Toggle (Matching Mockup) */}
+        {/* Right Section: Notification, Profile, Theme Toggle */}
         <div className="hidden sm:flex items-center gap-3.5">
-          {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* Notification Bell with Badge */}
+          {/* Notification Bell */}
           <button
             title="Notifications"
             className="relative p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
@@ -131,7 +129,7 @@ export const Navbar: React.FC = () => {
             </span>
           </button>
 
-          {/* User Profile Pill (Matching Mockup: "H | Hi, Hriday - View profile ⌵") */}
+          {/* User Profile Pill */}
           <div className="flex items-center gap-2.5 pl-1.5">
             <Link
               href="/dashboard"
@@ -152,7 +150,7 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Menu Hamburger */}
+        {/* Mobile Hamburger */}
         <div className="lg:hidden flex items-center gap-2">
           <ThemeToggle />
           <motion.button

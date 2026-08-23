@@ -13,7 +13,6 @@ import {
   Plus,
   Lock,
   Info,
-  ChevronRight,
   Folder,
   BarChart3,
   MessageSquare,
@@ -22,7 +21,6 @@ import {
   Heart,
   Footprints,
   Moon,
-  Activity,
   Smile,
 } from "lucide-react";
 import { HumanBodyCanvas } from "@/components/twin/HumanBodyCanvas";
@@ -36,15 +34,15 @@ export default function HomePage() {
 
   return (
     <div className="w-full space-y-12 sm:space-y-16 pb-16 transition-colors duration-300">
-      {/* 1. HERO SECTION (Matching Design Mockup) */}
-      <section className="relative pt-6 sm:pt-8 pb-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+      {/* 1. HERO SECTION (16:9 Widescreen Optimized) */}
+      <section className="relative pt-4 sm:pt-6 pb-2">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center min-h-[580px] lg:min-h-[640px]">
             
             {/* Left Hero Column: Headline & Action Buttons (4 Cols) */}
-            <div className="lg:col-span-4 space-y-6 z-10">
+            <div className="lg:col-span-4 space-y-6 lg:space-y-8 z-10">
               <div className="space-y-2">
-                <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-normal tracking-tight text-slate-900 dark:text-white leading-[1.12] font-serif">
+                <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-normal tracking-tight text-slate-900 dark:text-white leading-[1.12] font-serif">
                   Understand your health.
                   <br />
                   Take control of your{" "}
@@ -54,16 +52,16 @@ export default function HomePage() {
                 </h1>
               </div>
 
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-md">
+              <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg">
                 Your Digital Twin unifies your medical records, lifestyle data, and advanced AI to give you personalized insights and help you live a healthier life.
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 pt-1">
+              <div className="flex flex-wrap items-center gap-3.5 pt-1">
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     href="/dashboard"
-                    className="px-6 py-3.5 rounded-2xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-sm shadow-sm transition-all flex items-center gap-2"
+                    className="px-7 py-4 rounded-2xl bg-[#1b4332] hover:bg-[#14382c] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-sm shadow-sm transition-all flex items-center gap-2"
                   >
                     <span>Go to Dashboard</span>
                     <ArrowRight className="w-4 h-4" />
@@ -73,7 +71,7 @@ export default function HomePage() {
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <a
                     href="#platform"
-                    className="px-5 py-3.5 rounded-2xl bg-white dark:bg-[#112019] border border-slate-200 dark:border-[#1c3328] text-slate-800 dark:text-slate-200 font-semibold text-sm shadow-2xs hover:bg-slate-50 dark:hover:bg-[#162921] transition-all flex items-center gap-2"
+                    className="px-6 py-4 rounded-2xl bg-white dark:bg-[#112019] border border-slate-200 dark:border-[#1c3328] text-slate-800 dark:text-slate-200 font-semibold text-sm shadow-2xs hover:bg-slate-50 dark:hover:bg-[#162921] transition-all flex items-center gap-2"
                   >
                     <span>Explore Features</span>
                     <LayoutGrid className="w-4 h-4 opacity-60" />
@@ -89,7 +87,7 @@ export default function HomePage() {
             </div>
 
             {/* Center Hero Column: 3D Anatomical Body with Flanking Badges (5 Cols) */}
-            <div className="lg:col-span-5 relative flex flex-col items-center justify-center min-h-[480px]">
+            <div className="lg:col-span-5 relative flex flex-col items-center justify-center min-h-[500px] lg:min-h-[640px]">
               <HumanBodyCanvas
                 onSelectOrgan={(organ) => setSelectedOrgan(organ)}
                 selectedOrganId={selectedOrgan?.id}
@@ -99,7 +97,7 @@ export default function HomePage() {
 
             {/* Right Hero Column: Health Overview Card (3 Cols - Matching Mockup) */}
             <div className="lg:col-span-3">
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-sm space-y-5">
+              <div className="p-6 lg:p-7 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-sm space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div>
@@ -112,17 +110,17 @@ export default function HomePage() {
                 </div>
 
                 {/* Big Health Score Metric */}
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">Health Score</span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white">
+                    <span className="text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-white">
                       87
                     </span>
-                    <span className="text-xs text-slate-400 font-medium">/100</span>
+                    <span className="text-sm text-slate-400 font-medium">/100</span>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
                     <div className="bg-[#1b4332] dark:bg-emerald-500 h-full rounded-full" style={{ width: "87%" }} />
                   </div>
 
@@ -133,43 +131,43 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Vitals Breakdown Table (Matching Mockup) */}
-                <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-[#1c3328] text-xs">
+                {/* Vitals Breakdown Table */}
+                <div className="space-y-3.5 pt-3 border-t border-slate-100 dark:border-[#1c3328] text-xs">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
                       <Footprints className="w-4 h-4 text-slate-400" />
                       <span>Steps (Today)</span>
                     </div>
-                    <span className="font-bold text-slate-900 dark:text-white">7,842</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">7,842</span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
                       <Moon className="w-4 h-4 text-slate-400" />
                       <span>Sleep (Last Night)</span>
                     </div>
-                    <span className="font-bold text-slate-900 dark:text-white">7h 23m</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">7h 23m</span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
                       <Heart className="w-4 h-4 text-rose-500" />
                       <span>Heart Rate</span>
                     </div>
-                    <span className="font-bold text-slate-900 dark:text-white">72 bpm</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">72 bpm</span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
                       <Smile className="w-4 h-4 text-emerald-600" />
                       <span>Stress Level</span>
                     </div>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-400">Low</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">Low</span>
                   </div>
                 </div>
 
                 {/* Bottom Action Link */}
-                <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328]">
+                <div className="pt-3 border-t border-slate-100 dark:border-[#1c3328]">
                   <Link
                     href="/dashboard"
                     className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white hover:text-emerald-700 transition-colors group"
@@ -185,19 +183,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. STAT SUMMARY ROW (5 Cards Matching Mockup) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 2. STAT SUMMARY ROW (5 Cards Across 16:9 Grid) */}
+      <section className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
           
           {/* Card 1: Reports Uploaded */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-3xl font-black text-slate-900 dark:text-white block leading-tight">24</span>
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">Reports Uploaded</span>
+                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">24</span>
+                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Reports Uploaded</span>
                 <span className="text-[11px] text-slate-400 dark:text-slate-500 block">This month</span>
               </div>
             </div>
@@ -208,14 +206,14 @@ export default function HomePage() {
           </div>
 
           {/* Card 2: Health Score */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-3xl font-black text-slate-900 dark:text-white block leading-tight">87</span>
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">Health Score</span>
+                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">87</span>
+                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Health Score</span>
                 <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold block flex items-center gap-1 mt-0.5">
                   <span>◆</span> Optimal
                 </span>
@@ -228,14 +226,14 @@ export default function HomePage() {
           </div>
 
           {/* Card 3: Health Alerts */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-3xl font-black text-slate-900 dark:text-white block leading-tight">3</span>
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">Health Alerts</span>
+                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">3</span>
+                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Health Alerts</span>
               </div>
             </div>
             <Link href="/predictions" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
@@ -245,14 +243,14 @@ export default function HomePage() {
           </div>
 
           {/* Card 4: Upcoming Appointments */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-3xl font-black text-slate-900 dark:text-white block leading-tight">2</span>
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">Upcoming Appointments</span>
+                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white block leading-tight">2</span>
+                <span className="text-xs lg:text-sm font-semibold text-slate-800 dark:text-slate-200 block">Upcoming Appointments</span>
               </div>
             </div>
             <Link href="/dashboard" className="text-xs font-semibold text-slate-800 dark:text-slate-300 hover:text-emerald-700 flex items-center gap-1">
@@ -264,15 +262,15 @@ export default function HomePage() {
           {/* Card 5: Add New Quick Action */}
           <Link
             href="/records"
-            className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:border-emerald-600/60 transition-all flex flex-col justify-between space-y-4 group"
+            className="p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:border-emerald-600/60 transition-all flex flex-col justify-between space-y-4 group"
           >
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <Plus className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-base font-bold text-slate-900 dark:text-white block">Add New</span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5 leading-snug">
+                <span className="text-base lg:text-lg font-bold text-slate-900 dark:text-white block">Add New</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5 leading-snug">
                   Upload reports, logs, or health data
                 </span>
               </div>
@@ -282,8 +280,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. EXPLORE PLATFORM SECTION (6 Feature Cards Matching Mockup) */}
-      <section id="platform" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      {/* 3. EXPLORE PLATFORM SECTION (6 Cards Grid Across 16:9) */}
+      <section id="platform" className="max-w-[1680px] mx-auto px-4 sm:px-8 lg:px-12 pt-4">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
@@ -299,20 +297,20 @@ export default function HomePage() {
         </div>
 
         {/* 6 Feature Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-5">
           
           {/* Card 1: Medical Records */}
           <Link
             href="/records"
-            className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
+            className="p-5 lg:p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
           >
             <div className="space-y-3">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
                 <Folder className="w-5 h-5" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">Medical Records</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   Upload, store and manage all your medical documents.
                 </p>
               </div>
@@ -325,15 +323,15 @@ export default function HomePage() {
           {/* Card 2: Health Insights */}
           <Link
             href="/predictions"
-            className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
+            className="p-5 lg:p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
           >
             <div className="space-y-3">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
                 <BarChart3 className="w-5 h-5" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">Health Insights</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   AI-generated insights based on your health data.
                 </p>
               </div>
@@ -346,15 +344,15 @@ export default function HomePage() {
           {/* Card 3: AI Assistant */}
           <Link
             href="/assistant"
-            className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
+            className="p-5 lg:p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
           >
             <div className="space-y-3">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
                 <MessageSquare className="w-5 h-5" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">AI Assistant</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   Ask questions and get reliable answers about your health.
                 </p>
               </div>
@@ -367,15 +365,15 @@ export default function HomePage() {
           {/* Card 4: Risk Prediction */}
           <Link
             href="/predictions"
-            className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
+            className="p-5 lg:p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
           >
             <div className="space-y-3">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">Risk Prediction</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   Predict potential risks and stay one step ahead.
                 </p>
               </div>
@@ -388,15 +386,15 @@ export default function HomePage() {
           {/* Card 5: 3D Digital Twin */}
           <Link
             href="/digital-twin"
-            className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
+            className="p-5 lg:p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
           >
             <div className="space-y-3">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
                 <UserCheck className="w-5 h-5" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">3D Digital Twin</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   Explore your interactive virtual body and organ health.
                 </p>
               </div>
@@ -409,15 +407,15 @@ export default function HomePage() {
           {/* Card 6: Lifestyle Tracker */}
           <Link
             href="/simulator"
-            className="p-5 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
+            className="p-5 lg:p-6 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between space-y-4 group"
           >
             <div className="space-y-3">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-center">
                 <Heart className="w-5 h-5" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">Lifestyle Tracker</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   Track habits, sleep, activity, nutrition and more.
                 </p>
               </div>
