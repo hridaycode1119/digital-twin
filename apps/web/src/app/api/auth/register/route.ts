@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { DigitalTwin } from "@/models/DigitalTwin";
@@ -6,7 +6,7 @@ import { initialPatientTwin } from "@/data/mockPatient";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { name, email, password, role = "PATIENT" } = await request.json();
 

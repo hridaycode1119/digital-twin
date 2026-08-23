@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -11,6 +12,7 @@ module.exports = {
         slate: {
           850: '#111827',
           950: '#030712',
+          975: '#060a12',
         },
         biotech: {
           50: '#f0fdfa',

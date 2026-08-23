@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { DigitalTwin } from "@/models/DigitalTwin";
 import { initialPatientTwin } from "@/data/mockPatient";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const patientId = searchParams.get("patientId") || "pt_1029384";
 
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { patientId = "pt_1029384", ...updates } = body;

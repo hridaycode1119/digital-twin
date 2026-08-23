@@ -3,6 +3,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { ScrollProgress } from "@/components/ui/ScrollProgress";
 
 export const metadata: Metadata = {
@@ -16,14 +17,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className="antialiased flex flex-col min-h-screen">
-        <AuthProvider>
-          <ScrollProgress />
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </AuthProvider>
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+      <body className="antialiased flex flex-col min-h-screen transition-colors duration-300">
+        <ThemeProvider>
+          <AuthProvider>
+            <ScrollProgress />
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
