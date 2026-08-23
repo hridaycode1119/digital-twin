@@ -13,24 +13,11 @@ export async function GET(request: NextRequest) {
     const records = await MedicalRecord.find({ patientId }).sort({ uploadedAt: -1 });
     return NextResponse.json({ success: true, count: records.length, data: records });
   } catch (error: any) {
+    console.error("Records query error:", error);
     return NextResponse.json({
       success: true,
-      source: "mock-fallback",
-      data: [
-        {
-          recordId: "rec_9921",
-          title: "Comprehensive Metabolic Panel (CMP)",
-          category: "LAB_REPORT",
-          uploadedAt: new Date().toISOString(),
-          ocrConfidence: 0.98,
-          biomarkers: [
-            { name: "Fasting Blood Glucose", value: 108, unit: "mg/dL", status: "ELEVATED", referenceRange: "70-99" },
-            { name: "HbA1c", value: 5.8, unit: "%", status: "ELEVATED", referenceRange: "< 5.7" },
-            { name: "Serum Creatinine", value: 0.88, unit: "mg/dL", status: "NORMAL", referenceRange: "0.74-1.35" },
-            { name: "eGFR", value: 108, unit: "mL/min/1.73m²", status: "NORMAL", referenceRange: "> 90" },
-          ],
-        },
-      ],
+      data: [],
+      error: error.message,
     });
   }
 }

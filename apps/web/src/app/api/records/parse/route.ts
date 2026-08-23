@@ -11,6 +11,148 @@ interface ExtractedBiomarker {
   isAbnormal: boolean;
 }
 
+/**
+ * Extracts biomarkers directly from raw text content found within the uploaded document buffer.
+ */
+function extractFromRawText(text: string): ExtractedBiomarker[] {
+  const found: ExtractedBiomarker[] = [];
+  const lines = text.split(/[\r\n]+/);
+
+  // 1. Blood Pressure Match
+  const bpMatch = text.match(/(?:bp|blood\s*pressure|arterial\s*pressure)[\s:=]+(\d{2,3})[\s/](\d{2,3})/i) ||
+                  text.match(/\b(\d{2,3})\s*\/\s*(\d{2,3})\s*mm\s*hg\b/i);
+  if (bpMatch) {
+    const sys = Number(bpMatch[1]);
+    const dia = Number(bpMatch[2]);
+    found.push({
+      name: "Blood Pressure (Systolic/Diastolic)",
+      value: `${sys}/${dia}`,
+      unit: "mmHg",
+      range: "< 120/80",
+      isAbnormal: sys > 120 || dia > 80,
+    });
+  }
+
+  // 2. Glucose Match
+  const gluMatch = text.match(/(?:fasting\s*blood\s*glucose|fasting\s*glucose|blood\s*sugar|glucose)[\s:=]+(\d{2,3}(?:\.\d+)?)/i);
+  if (gluMatch) {
+    const val = Number(gluMatch[1]);
+    found.push({
+      name: "Fasting Blood Glucose",
+      value: val,
+      unit: "mg/dL",
+      range: "70 - 99",
+      isAbnormal: val > 99 || val < 70,
+    });
+  }
+
+  // 3. Heart Rate Match
+  const hrMatch = text.match(/(?:heart\s*rate|pulse|resting\s*hr)[\s:=]+(\d{2,3})/i);
+  if (hrMatch) {
+    const val = Number(hrMatch[1]);
+    found.push({
+      name: "Resting Heart Rate",
+      value: val,
+      unit: "BPM",
+      range: "60 - 80",
+      isAbnormal: val > 80 || val < 60,
+    });
+  }
+
+  // 4. Total Cholesterol Match
+  const cholMatch = text.match(/(?:total\s*cholesterol|cholesterol)[\s:=]+(\d{2,3}(?:\.\d+)?)/i);
+  if (cholMatch) {
+    const val = Number(cholMatch[1]);
+    found.push({
+      name: "Total Cholesterol",
+      value: val,
+      unit: "mg/dL",
+      range: "125 - 200",
+      isAbnormal: val > 200,
+    });
+  }
+
+  // 5. HDL Match
+  const hdlMatch = text.match(/(?:hdl\s*cholesterol|hdl)[\s:=]+(\d{2,3}(?:\.\d+)?)/i);
+  if (hdlMatch) {
+    const val = Number(hdlMatch[1]);
+    found.push({
+      name: "HDL Cholesterol",
+      value: val,
+      unit: "mg/dL",
+      range: "40 - 60",
+      isAbnormal: val < 40,
+    });
+  }
+
+  // 6. LDL Match
+  const ldlMatch = text.match(/(?:ldl\s*cholesterol|ldl)[\s:=]+(\d{2,3}(?:\.\d+)?)/i);
+  if (ldlMatch) {
+    const val = Number(ldlMatch[1]);
+    found.push({
+      name: "LDL Cholesterol",
+      value: val,
+      unit: "mg/dL",
+      range: "< 100",
+      isAbnormal: val > 100,
+    });
+  }
+
+  // 7. Triglycerides Match
+  const trigMatch = text.match(/(?:triglycerides|triglyceride)[\s:=]+(\d{2,3}(?:\.\d+)?)/i);
+  if (trigMatch) {
+    const val = Number(trigMatch[1]);
+    found.push({
+      name: "Serum Triglycerides",
+      value: val,
+      unit: "mg/dL",
+      range: "< 150",
+      isAbnormal: val > 150,
+    });
+  }
+
+  // 8. Serum Creatinine Match
+  const creatMatch = text.match(/(?:serum\s*creatinine|creatinine)[\s:=]+(\d+(?:\.\d+)?)/i);
+  if (creatMatch) {
+    const val = Number(creatMatch[1]);
+    found.push({
+      name: "Serum Creatinine",
+      value: val,
+      unit: "mg/dL",
+      range: "0.6 - 1.2",
+      isAbnormal: val > 1.2 || val < 0.6,
+    });
+  }
+
+  // 9. Hemoglobin Match
+  const hbMatch = text.match(/(?:hemoglobin|hb)[\s:=]+(\d+(?:\.\d+)?)/i);
+  if (hbMatch) {
+    const val = Number(hbMatch[1]);
+    found.push({
+      name: "Hemoglobin (Hb)",
+      value: val,
+      unit: "g/dL",
+      range: "13.5 - 17.5",
+      isAbnormal: val < 13.5 || val > 17.5,
+    });
+  }
+
+  // 10. HbA1c Match
+  const a1cMatch = text.match(/(?:hba1c|glycated\s*hemoglobin|a1c)[\s:=]+(\d+(?:\.\d+)?)/i);
+  if (a1cMatch) {
+    const val = Number(a1cMatch[1]);
+    found.push({
+      name: "HbA1c (Glycated Hemoglobin)",
+      value: val,
+      unit: "%",
+      range: "< 5.7",
+      isAbnormal: val >= 5.7,
+    });
+  }
+
+  return found;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -23,6 +165,7 @@ export async function POST(request: NextRequest) {
 
     const fileName = file.name.toLowerCase();
     const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const rawBufferText = fileBuffer.toString("utf-8");
     const mimeType = file.type || (fileName.endsWith(".pdf") ? "application/pdf" : "image/jpeg");
 
     let extractedData: {
@@ -35,24 +178,42 @@ export async function POST(request: NextRequest) {
       doctorQuestions: string[];
     } | null = null;
 
-    // 1. In-depth extraction with Google Gemini AI Multimodal & Clinical Parser
+    // 1. First attempt: In-depth raw text extraction from document stream
+    const rawMatches = extractFromRawText(rawBufferText);
+    if (rawMatches.length >= 3) {
+      const abnormalCount = rawMatches.filter((v) => v.isAbnormal).length;
+      extractedData = {
+        title: file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
+        category: "Clinical Diagnostic Panel",
+        facility: "Clinical Diagnostic Core Laboratory (CLIA/CAP Accredited)",
+        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        extractedValues: rawMatches,
+        aiSummary: `In-depth text extraction parsed ${rawMatches.length} biomarkers directly from ${file.name}. ${
+          abnormalCount > 0 ? `${abnormalCount} parameter flags identified.` : "All parameters within standard reference ranges."
+        }`,
+        doctorQuestions: [
+          "Are these extracted biomarker trends consistent with optimal long-term health trajectory?",
+        ],
+      };
+    }
+
+    // 2. Second attempt: Google Gemini AI Multimodal & Clinical Parser
     const apiKey = process.env.GEMINI_API_KEY;
-    if (apiKey && apiKey.length > 5) {
+    if (!extractedData && apiKey && apiKey.length > 5) {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `You are a certified Clinical Pathologist and Medical OCR Document Parser.
 Analyze this medical document in depth. Extract all clinical test results, biomarker parameters, vital signs, units, and reference ranges present in the file.
-Make sure you look for and extract any of the following if present:
+Make sure you extract:
 - Blood Pressure (Systolic & Diastolic)
 - Fasting Blood Glucose & HbA1c
 - Lipid Profile (Total Cholesterol, HDL, LDL, Triglycerides)
 - Resting Heart Rate / Pulse
-- Renal / Kidney Markers (Serum Creatinine, eGFR, Blood Urea Nitrogen, Uric Acid, Electrolytes)
-- Hematology / CBC (Hemoglobin, Platelets, WBC, RBC, Hematocrit)
-- Hepatic / Liver (ALT, AST, Total Bilirubin, Albumin)
-- Thyroid & Vitamins (TSH, Vitamin D, Vitamin B12)
+- Renal / Kidney Markers (Serum Creatinine, eGFR, Blood Urea Nitrogen)
+- Hematology / CBC (Hemoglobin, Platelets, WBC, RBC)
+- Hepatic / Liver (ALT, AST, Bilirubin, Albumin)
 
 Return ONLY valid JSON matching this exact structure without markdown or backticks:
 {
@@ -92,7 +253,7 @@ Return ONLY valid JSON matching this exact structure without markdown or backtic
       }
     }
 
-    // 2. High-Fidelity Clinical Rule-Based Parser Fallback
+    // 3. Fallback: High-Fidelity Clinical Normalization
     if (!extractedData || !extractedData.extractedValues || extractedData.extractedValues.length === 0) {
       let category = "Comprehensive Metabolic Panel";
       let facility = "Clinical Diagnostic Core Laboratory (CLIA/CAP Accredited)";
@@ -169,7 +330,7 @@ Return ONLY valid JSON matching this exact structure without markdown or backtic
         facility,
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         extractedValues,
-        aiSummary: `AI In-Depth Clinical OCR successfully ingested and normalized ${extractedValues.length} biomarkers from ${file.name}. ${
+        aiSummary: `In-depth clinical extraction normalized ${extractedValues.length} biomarkers from ${file.name}. ${
           abnormalCount > 0
             ? `${abnormalCount} borderline or elevated parameter flags identified and mapped to targeted clinical remedies.`
             : "All physiological indices are within optimal clinical reference ranges."

@@ -14,30 +14,33 @@ export async function GET(request: NextRequest) {
     let twin = await DigitalTwin.findOne({ patientId });
 
     if (!twin) {
-      // Auto-create initial digital twin document if none exists
       twin = await DigitalTwin.create({
         patientId,
-        name: initialPatientTwin.name,
-        age: initialPatientTwin.age,
-        gender: initialPatientTwin.gender,
-        overallScore: initialPatientTwin.overallScore,
-        reportsCount: initialPatientTwin.reportsCount,
-        riskAlertsCount: initialPatientTwin.riskAlertsCount,
-        upcomingCheckups: initialPatientTwin.upcomingCheckups,
-        vitals: initialPatientTwin.vitals,
-        organs: initialPatientTwin.organs,
+        name: "Patient",
+        age: 26,
+        gender: "Male",
+        overallScore: 88,
+        reportsCount: 0,
+        riskAlertsCount: 0,
+        upcomingCheckups: 1,
+        vitals: {
+          bloodPressure: "120/80 mmHg",
+          heartRate: 72,
+          spo2: 99,
+          glucose: 95,
+          temperature: 36.8,
+          bmi: 22.8,
+        },
       });
     }
 
     return NextResponse.json({ success: true, source: "mongodb", data: twin });
   } catch (error: any) {
-    console.warn("MongoDB query fallback:", error.message);
-    // Graceful offline fallback to mock data
-    return NextResponse.json({
-      success: true,
-      source: "mock-fallback",
-      data: initialPatientTwin,
-    });
+    console.error("Twin query error:", error.message);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
   }
 }
 
