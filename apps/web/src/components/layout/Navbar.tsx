@@ -20,22 +20,36 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
-const navLinks = [
+// Public navigation links (Visible before logging in)
+const publicNavLinks = [
   { name: "Home", href: "/" },
+  { name: "Features", href: "/#platform" },
+  { name: "How It Works", href: "/#how-it-works" },
+  { name: "Architecture", href: "/#architecture" },
+  { name: "Clinicians", href: "/#clinicians" },
+  { name: "FAQ", href: "/#faq" },
+];
+
+// Authenticated navigation links (Visible ONLY after login)
+const authAppNavLinks = [
   { name: "Dashboard", href: "/dashboard" },
+  { name: "3D Twin", href: "/digital-twin" },
   { name: "Reports", href: "/records" },
   { name: "Insights", href: "/predictions" },
   { name: "AI Assistant", href: "/assistant" },
-  { name: "Doctors", href: "/doctor" },
+  { name: "Simulator", href: "/simulator" },
+  { name: "Doctor Review", href: "/doctor" },
 ];
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const { isLoggedIn, user, logout } = useAuth();
+
+  // Dynamic link set depending on authentication state
+  const currentNavLinks = isLoggedIn ? authAppNavLinks : publicNavLinks;
 
   const handleLogout = () => {
     logout();
@@ -61,12 +75,14 @@ export const Navbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Center Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-8 text-sm font-medium">
-          {navLinks.map((link) => {
+        {/* Center Navigation Links (Public vs Authenticated) */}
+        <nav className="hidden lg:flex items-center gap-7 text-sm font-medium">
+          {currentNavLinks.map((link) => {
             const isActive =
               link.href === "/"
                 ? pathname === "/"
+                : link.href.startsWith("/#")
+                ? false
                 : pathname === link.href || pathname.startsWith(`${link.href}/`);
 
             return (
@@ -91,54 +107,14 @@ export const Navbar: React.FC = () => {
               </Link>
             );
           })}
-
-          {/* More Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
-              className="flex items-center gap-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white py-2"
-            >
-              <span>More</span>
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
-
-            {moreDropdownOpen && (
-              <div
-                className="absolute top-full right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] shadow-lg py-2 z-50 animate-in fade-in zoom-in-95 duration-150"
-                onMouseLeave={() => setMoreDropdownOpen(false)}
-              >
-                <Link
-                  href="/simulator"
-                  onClick={() => setMoreDropdownOpen(false)}
-                  className="block px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-emerald-950/30"
-                >
-                  Future Health Simulator
-                </Link>
-                <Link
-                  href="/digital-twin"
-                  onClick={() => setMoreDropdownOpen(false)}
-                  className="block px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-emerald-950/30"
-                >
-                  3D Body Explorer
-                </Link>
-                <Link
-                  href="/onboarding"
-                  onClick={() => setMoreDropdownOpen(false)}
-                  className="block px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-emerald-950/30"
-                >
-                  Twin Calibration Wizard
-                </Link>
-              </div>
-            )}
-          </div>
         </nav>
 
-        {/* Right Section: Auth Switcher, Notifications, Profile, Theme Toggle */}
+        {/* Right Section: Theme Toggle & Auth State */}
         <div className="hidden sm:flex items-center gap-3.5">
           <ThemeToggle />
 
           {isLoggedIn ? (
-            /* Logged-In State */
+            /* Logged-In State with Notifications & User Dropdown */
             <div className="flex items-center gap-3">
               {/* Notification Bell */}
               <button
@@ -240,7 +216,7 @@ export const Navbar: React.FC = () => {
           )}
         </div>
 
-        {/* Mobile Hamburger */}
+        {/* Mobile Hamburger Button */}
         <div className="lg:hidden flex items-center gap-2">
           <ThemeToggle />
           <motion.button
@@ -254,7 +230,7 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Menu Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -263,7 +239,7 @@ export const Navbar: React.FC = () => {
             exit={{ opacity: 0, height: 0 }}
             className="lg:hidden px-4 pt-3 pb-6 space-y-2 bg-white dark:bg-[#0b1410] border-t border-slate-200 dark:border-[#1c3328] overflow-hidden"
           >
-            {navLinks.map((link) => {
+            {currentNavLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link

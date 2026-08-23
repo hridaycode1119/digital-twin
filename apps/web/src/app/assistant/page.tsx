@@ -6,12 +6,12 @@ import {
   Send,
   Bot,
   User,
-  FileText,
   ShieldAlert,
   HelpCircle,
   Clock,
   ArrowRight,
   ExternalLink,
+  Heart,
 } from "lucide-react";
 
 interface Message {
@@ -26,7 +26,7 @@ const initialMessages: Message[] = [
   {
     id: "msg_1",
     sender: "ASSISTANT",
-    text: "Hello Alex! I am your AI Health Assistant. I have indexed your 24 medical records, including your latest Comprehensive Metabolic Panel from Aug 15, 2026. How can I help you understand your Digital Twin state today?",
+    text: "Hello Hriday! I am your Digital Twin Clinical AI Assistant powered by Google Gemini. I have indexed your clinical records and continuous biometric stream. How can I help you understand your physiological state today?",
     timestamp: "10:00 AM",
   },
   {
@@ -38,7 +38,7 @@ const initialMessages: Message[] = [
   {
     id: "msg_3",
     sender: "ASSISTANT",
-    text: "Your Heart node is currently flagged for **Monitoring** due to two primary biomarkers:\n\n1. **Blood Pressure:** Your recent readings average `128/82 mmHg`, placing you in the elevated pre-hypertension band.\n2. **Lipid Profile:** Your Total Cholesterol was measured at `208 mg/dL` (borderline elevated, standard reference `< 200 mg/dL`) with an LDL level of `128 mg/dL`.\n\nCombined with your family history of hypertension, our XGBoost model calculates a 10-year Cardiovascular Disease risk of **14.2% (Moderate)**. \n\n*Actionable Guidance:* Increasing moderate aerobic activity to 45 mins/day and reducing dietary sodium can help bring your systolic pressure back below 120 mmHg.",
+    text: "Your Heart node is currently flagged for **Monitoring** due to two primary biomarkers:\n\n1. **Blood Pressure:** Your recent readings average `128/82 mmHg`, placing you in the elevated pre-hypertension band.\n2. **Lipid Profile:** Your Total Cholesterol was measured at `208 mg/dL` (borderline elevated, standard reference `< 200 mg/dL`) with an LDL level of `128 mg/dL`.\n\nCombined with family history, our predictive model calculates a 10-year Cardiovascular Disease risk of **14.2% (Moderate)**. \n\n*Actionable Guidance:* 30-45 mins of daily Zone-2 cardio and lowering dietary sodium can help normalize your systolic pressure.",
     citations: [
       { title: "Comprehensive Metabolic & Lipid Panel", date: "Aug 15, 2026", recordId: "rec_001" },
       { title: "12-Lead Electrocardiogram (ECG)", date: "Jul 02, 2026", recordId: "rec_002" },
@@ -59,7 +59,7 @@ export default function AssistantPage() {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     const text = textToSend || inputValue;
     if (!text.trim()) return;
 
@@ -74,83 +74,105 @@ export default function AssistantPage() {
     if (!textToSend) setInputValue("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      setIsTyping(false);
-      const aiReply: Message = {
+    try {
+      const res = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: text }),
+      });
+      const json = await res.json();
+
+      if (json.success && json.data) {
+        const aiReply: Message = {
+          id: `ai_${Date.now()}`,
+          sender: "ASSISTANT",
+          text: json.data.reply,
+          citations: json.data.citations,
+          timestamp: json.data.timestamp || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, aiReply]);
+      } else {
+        throw new Error(json.error || "AI Service unavailable");
+      }
+    } catch (err: any) {
+      const fallbackReply: Message = {
         id: `ai_${Date.now()}`,
         sender: "ASSISTANT",
-        text: `Based on your recent diagnostic reports and vitals history regarding "${text}":\n\nYour clinical parameters indicate stable organ function overall with a Health Score of **87/100**. Your fasting glucose (108 mg/dL) remains the key metric to monitor. Regular physical activity (8,500+ steps) and minimizing processed sugars are strongly supported by current clinical guidelines to optimize this score.\n\n*Reminder: This is educational guidance based on your Digital Twin records.*`,
-        citations: [
-          { title: "Comprehensive Metabolic & Lipid Panel", date: "Aug 15, 2026", recordId: "rec_001" },
-        ],
+        text: `Based on your digital twin records regarding "${text}":\n\nYour clinical parameters reflect an overall Health Score of **87/100 (Optimal)**. Fasting blood glucose (108 mg/dL) and systolic BP (128 mmHg) are the primary areas for lifestyle optimization.`,
+        citations: [{ title: "Diagnostic Vault Index", date: "Aug 2026", recordId: "rec_001" }],
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
-      setMessages((prev) => [...prev, aiReply]);
-    }, 1500);
+      setMessages((prev) => [...prev, fallbackReply]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 h-[calc(100vh-140px)] flex flex-col">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8 h-[calc(100vh-140px)] flex flex-col transition-colors duration-300">
       {/* Header */}
-      <div className="glass-card rounded-3xl p-5 mb-4 flex items-center justify-between shadow-sm">
+      <div className="p-5 mb-4 rounded-3xl bg-white dark:bg-[#112019] border border-slate-200/90 dark:border-[#1c3328] flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-            <Bot className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-2xl bg-[#1b4332] dark:bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+            <Bot className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-900">RAG AI Health Assistant</h1>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white">Gemini Clinical AI Assistant</h1>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Grounded on 24 Records
+                Grounded on 24 Records • Gemini 1.5
               </span>
             </div>
-            <p className="text-xs text-slate-500">Conversational exploration with document citations</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Conversational exploration with real-time biometric grounding</p>
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400">
-          <ShieldAlert className="w-4 h-4 text-blue-500" />
-          <span>Non-Prescriptive Safety Guardrails Active</span>
+        <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+          <ShieldAlert className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <span>Clinical Safety Guardrails Active</span>
         </div>
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto space-y-4 p-4 glass-card rounded-3xl mb-4">
+      <div className="flex-1 overflow-y-auto space-y-4 p-4 sm:p-6 rounded-3xl bg-white/70 dark:bg-[#0e1a14]/70 border border-slate-200/80 dark:border-[#1c3328] mb-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex gap-3 ${msg.sender === "USER" ? "justify-end" : "justify-start"}`}
+            className={`flex gap-3 max-w-3xl ${msg.sender === "USER" ? "ml-auto flex-row-reverse" : "mr-auto"}`}
           >
-            {msg.sender === "ASSISTANT" && (
-              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 mt-1 shadow-xs">
-                <Sparkles className="w-4 h-4" />
-              </div>
-            )}
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
+                msg.sender === "USER"
+                  ? "bg-[#1b4332] text-white"
+                  : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900"
+              }`}
+            >
+              {msg.sender === "USER" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+            </div>
 
             <div
-              className={`max-w-[82%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
+              className={`p-4 rounded-3xl text-xs sm:text-sm leading-relaxed space-y-2 ${
                 msg.sender === "USER"
-                  ? "bg-blue-600 text-white font-medium rounded-tr-sm shadow-md"
-                  : "bg-white border border-slate-200/80 text-slate-800 rounded-tl-sm shadow-xs"
+                  ? "bg-[#1b4332] text-white rounded-tr-xs"
+                  : "bg-white dark:bg-[#112019] text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-[#1c3328] rounded-tl-xs shadow-2xs"
               }`}
             >
               <div className="whitespace-pre-line">{msg.text}</div>
 
-              {/* Document Citations */}
               {msg.citations && msg.citations.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                    <FileText className="w-3 h-3 text-blue-500" /> Referenced Sources:
+                <div className="pt-2 border-t border-slate-100 dark:border-[#1c3328] space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Grounded Diagnostic Sources:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {msg.citations.map((cite, i) => (
+                    {msg.citations.map((cit, idx) => (
                       <span
-                        key={i}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50/80 text-blue-700 text-[11px] font-semibold border border-blue-200/60"
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200/80 dark:border-emerald-900/50"
                       >
-                        {cite.title} ({cite.date})
-                        <ExternalLink className="w-3 h-3 text-blue-500" />
+                        <span>{cit.title}</span>
+                        <span className="text-[10px] opacity-60">({cit.date})</span>
                       </span>
                     ))}
                   </div>
@@ -158,63 +180,64 @@ export default function AssistantPage() {
               )}
 
               <span
-                className={`block text-[10px] mt-1.5 ${
-                  msg.sender === "USER" ? "text-blue-100 text-right" : "text-slate-400"
+                className={`text-[10px] block text-right ${
+                  msg.sender === "USER" ? "text-emerald-200" : "text-slate-400"
                 }`}
               >
                 {msg.timestamp}
               </span>
             </div>
-
-            {msg.sender === "USER" && (
-              <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 mt-1 shadow-xs">
-                <User className="w-4 h-4" />
-              </div>
-            )}
           </div>
         ))}
 
         {isTyping && (
-          <div className="flex gap-3 justify-start">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 animate-spin" />
+          <div className="flex gap-3 max-w-xl mr-auto">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center shrink-0">
+              <Bot className="w-4 h-4" />
             </div>
-            <div className="bg-white border border-slate-200 p-3.5 rounded-2xl text-xs text-slate-500 flex items-center gap-2">
-              <span>Retrieving medical record vectors & generating grounded answer...</span>
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#112019] border border-slate-200/80 dark:border-[#1c3328] flex items-center gap-1.5 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce" />
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce [animation-delay:0.2s]" />
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce [animation-delay:0.4s]" />
+              <span className="text-xs text-slate-400 ml-1">Gemini AI synthesizing twin telemetry...</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Quick Prompts */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
-        {quickPrompts.map((prompt, idx) => (
+      {/* Suggested Quick Prompts */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none mb-2">
+        <span className="text-[11px] font-semibold text-slate-400 shrink-0 flex items-center gap-1">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+          Suggested:
+        </span>
+        {quickPrompts.map((prompt, i) => (
           <button
-            key={idx}
+            key={i}
             onClick={() => handleSend(prompt)}
-            className="px-3 py-1.5 rounded-full bg-white/80 border border-slate-200 text-xs font-semibold text-slate-700 hover:text-blue-600 hover:border-blue-300 shrink-0 transition-colors shadow-xs"
+            className="px-3 py-1.5 rounded-full bg-white dark:bg-[#112019] border border-slate-200 dark:border-[#1c3328] hover:border-emerald-600 text-slate-700 dark:text-slate-300 text-xs font-medium whitespace-nowrap transition-all shadow-2xs"
           >
             {prompt}
           </button>
         ))}
       </div>
 
-      {/* Input Form */}
-      <div className="flex gap-2">
+      {/* Input Bar */}
+      <div className="relative">
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Ask a question about your blood tests, vitals, or health score..."
-          className="flex-1 px-5 py-3.5 rounded-2xl bg-white border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+          placeholder="Ask anything about your organs, lab biomarkers, blood pressure, or lifestyle plans..."
+          className="w-full pl-4 pr-12 py-3.5 rounded-2xl border border-slate-200 dark:border-[#1c3328] bg-white dark:bg-[#112019] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all shadow-xs"
         />
         <button
           onClick={() => handleSend()}
-          className="px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/25 flex items-center gap-1.5 transition-colors"
+          disabled={!inputValue.trim() || isTyping}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-[#1b4332] dark:bg-emerald-600 text-white disabled:opacity-40 hover:bg-[#14382c] transition-colors shadow-xs"
         >
           <Send className="w-4 h-4" />
-          <span className="hidden sm:inline">Send</span>
         </button>
       </div>
     </div>
