@@ -39,6 +39,13 @@ export interface UserProfile {
   bloodPressure?: string;
   heartRate?: number;
   fastingGlucose?: number;
+  totalCholesterol?: number;
+  hdl?: number;
+  ldl?: number;
+  triglycerides?: number;
+  creatinine?: number;
+  hemoglobin?: number;
+  hba1c?: number;
   sleepHours?: number;
   exerciseDays?: number;
   dietType?: string;
@@ -143,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         bloodPressure: "120/80",
         heartRate: 72,
         fastingGlucose: 95,
+        totalCholesterol: 185,
         sleepHours: 7.5,
         exerciseDays: 4,
         dietType: "Balanced / Mediterranean",
@@ -168,6 +176,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         bloodPressure: userData.bloodPressure || "120/80",
         heartRate: userData.heartRate || 72,
         fastingGlucose: userData.fastingGlucose || 95,
+        totalCholesterol: userData.totalCholesterol || 185,
+        hdl: userData.hdl || 54,
+        ldl: userData.ldl || 105,
+        triglycerides: userData.triglycerides || 135,
+        creatinine: userData.creatinine || 0.9,
+        hemoglobin: userData.hemoglobin || 15.2,
         sleepHours: userData.sleepHours || 7.5,
         exerciseDays: userData.exerciseDays || 4,
         dietType: userData.dietType || "Balanced / Mediterranean",
@@ -213,23 +227,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `rec_${Date.now()}`,
     };
 
-    // Extract updated biomarkers directly from report to update patient condition
-    let updatedGlucose: number | undefined;
-    let updatedBp: string | undefined;
-    let updatedHr: number | undefined;
+    // Extract all updated clinical biomarkers directly from uploaded report
+    const updates: Partial<UserProfile> = {
+      recordsCount: (records.length || 0) + 1,
+    };
 
     for (const item of record.extractedValues || []) {
       const n = item.name.toLowerCase();
       const val = typeof item.value === "string" ? parseFloat(item.value) : item.value;
       if (!isNaN(val)) {
-        if (n.includes("glucose") || n.includes("sugar")) updatedGlucose = val;
-        if (n.includes("heart rate") || n.includes("pulse")) updatedHr = val;
+        if (n.includes("glucose") || n.includes("sugar")) updates.fastingGlucose = val;
+        if (n.includes("heart rate") || n.includes("pulse")) updates.heartRate = val;
+        if (n.includes("total cholesterol") || (n.includes("cholesterol") && !n.includes("hdl") && !n.includes("ldl"))) {
+          updates.totalCholesterol = val;
+        }
+        if (n.includes("hdl")) updates.hdl = val;
+        if (n.includes("ldl")) updates.ldl = val;
+        if (n.includes("triglyceride")) updates.triglycerides = val;
+        if (n.includes("creatinine")) updates.creatinine = val;
+        if (n.includes("hemoglobin") || n.includes("hb")) updates.hemoglobin = val;
+        if (n.includes("hba1c")) updates.hba1c = val;
       }
       if (n.includes("blood pressure") && typeof item.value === "string") {
-        updatedBp = item.value;
+        updates.bloodPressure = item.value;
+      } else if (n.includes("systolic") && !isNaN(val)) {
+        const currentDiastolic = user?.bloodPressure?.split("/")[1] || "80";
+        updates.bloodPressure = `${val}/${currentDiastolic}`;
       }
     }
 
+    // Save records
     setRecords((prev) => {
       const updated = [record, ...prev];
       if (user?.patientId) {
@@ -240,13 +267,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return updated;
     });
 
-    if (updatedGlucose !== undefined || updatedBp !== undefined || updatedHr !== undefined) {
-      updateUser({
-        fastingGlucose: updatedGlucose !== undefined ? updatedGlucose : user?.fastingGlucose,
-        bloodPressure: updatedBp !== undefined ? updatedBp : user?.bloodPressure,
-        heartRate: updatedHr !== undefined ? updatedHr : user?.heartRate,
-      });
-    }
+    // Immediately update patient profile state with extracted biomarkers
+    updateUser(updates);
   };
 
   const syncManualParameters = (params: {

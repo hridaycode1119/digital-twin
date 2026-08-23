@@ -165,35 +165,82 @@ export default function DashboardPage() {
 
     setTimeout(() => {
       const fileName = file.name.toLowerCase();
+      let extractedGlucose = 98;
+      let extractedSystolic = 122;
+      let extractedDiastolic = 80;
+      let extractedHr = 72;
+      let extractedCholesterol = 192;
+      let extractedCategory = "Comprehensive Metabolic Panel";
+
       let extractedValues = [
-        { name: "Fasting Blood Glucose", value: 96, unit: "mg/dL", range: "70 - 99", isAbnormal: false },
-        { name: "Total Cholesterol", value: 186, unit: "mg/dL", range: "125 - 200", isAbnormal: false },
+        { name: "Blood Pressure (Systolic/Diastolic)", value: "122/80", unit: "mmHg", range: "< 120/80", isAbnormal: false },
+        { name: "Fasting Blood Glucose", value: 98, unit: "mg/dL", range: "70 - 99", isAbnormal: false },
+        { name: "Resting Heart Rate", value: 72, unit: "BPM", range: "60 - 80", isAbnormal: false },
+        { name: "Total Cholesterol", value: 192, unit: "mg/dL", range: "125 - 200", isAbnormal: false },
         { name: "HDL Cholesterol", value: 55, unit: "mg/dL", range: "40 - 60", isAbnormal: false },
-        { name: "LDL Cholesterol", value: 105, unit: "mg/dL", range: "< 100", isAbnormal: true },
-        { name: "Serum Creatinine", value: 0.9, unit: "mg/dL", range: "0.6 - 1.2", isAbnormal: false },
+        { name: "LDL Cholesterol", value: 106, unit: "mg/dL", range: "< 100", isAbnormal: true },
+        { name: "Serum Creatinine", value: 0.92, unit: "mg/dL", range: "0.6 - 1.2", isAbnormal: false },
+        { name: "Hemoglobin (Hb)", value: 15.1, unit: "g/dL", range: "13.5 - 17.5", isAbnormal: false },
       ];
 
-      let category = "Blood Test";
-      if (fileName.includes("lipid")) {
-        category = "Lipid Panel";
+      if (fileName.includes("lipid") || fileName.includes("cholesterol")) {
+        extractedCategory = "Lipid Profile";
+        extractedCholesterol = 212;
+        extractedGlucose = 96;
+        extractedSystolic = 124;
+        extractedDiastolic = 82;
         extractedValues = [
-          { name: "Total Cholesterol", value: 190, unit: "mg/dL", range: "125 - 200", isAbnormal: false },
-          { name: "Triglycerides", value: 138, unit: "mg/dL", range: "< 150", isAbnormal: false },
-          { name: "HDL Cholesterol", value: 56, unit: "mg/dL", range: "40 - 60", isAbnormal: false },
-          { name: "LDL Cholesterol", value: 108, unit: "mg/dL", range: "< 100", isAbnormal: true },
+          { name: "Total Cholesterol", value: 212, unit: "mg/dL", range: "125 - 200", isAbnormal: true },
+          { name: "Triglycerides", value: 155, unit: "mg/dL", range: "< 150", isAbnormal: true },
+          { name: "HDL Cholesterol", value: 48, unit: "mg/dL", range: "40 - 60", isAbnormal: false },
+          { name: "LDL Cholesterol", value: 133, unit: "mg/dL", range: "< 100", isAbnormal: true },
+          { name: "Fasting Blood Glucose", value: 96, unit: "mg/dL", range: "70 - 99", isAbnormal: false },
+          { name: "Blood Pressure", value: "124/82", unit: "mmHg", range: "< 120/80", isAbnormal: false },
+        ];
+      } else if (fileName.includes("cbc") || fileName.includes("blood") || fileName.includes("hemogram")) {
+        extractedCategory = "Complete Blood Count";
+        extractedGlucose = 94;
+        extractedSystolic = 120;
+        extractedDiastolic = 78;
+        extractedHr = 70;
+        extractedValues = [
+          { name: "Hemoglobin (Hb)", value: 15.4, unit: "g/dL", range: "13.5 - 17.5", isAbnormal: false },
+          { name: "Platelet Count", value: 245, unit: "10^3/uL", range: "150 - 450", isAbnormal: false },
+          { name: "WBC Count", value: 6.8, unit: "10^3/uL", range: "4.5 - 11.0", isAbnormal: false },
+          { name: "Fasting Blood Glucose", value: 94, unit: "mg/dL", range: "70 - 99", isAbnormal: false },
+          { name: "Blood Pressure", value: "120/78", unit: "mmHg", range: "< 120/80", isAbnormal: false },
+          { name: "Resting Heart Rate", value: 70, unit: "BPM", range: "60 - 80", isAbnormal: false },
+        ];
+      } else if (fileName.includes("sugar") || fileName.includes("diabetes") || fileName.includes("glucose")) {
+        extractedCategory = "Glycemic / Glucose Panel";
+        extractedGlucose = 112;
+        extractedSystolic = 126;
+        extractedDiastolic = 82;
+        extractedValues = [
+          { name: "Fasting Blood Glucose", value: 112, unit: "mg/dL", range: "70 - 99", isAbnormal: true },
+          { name: "HbA1c (Glycated)", value: 5.7, unit: "%", range: "< 5.7", isAbnormal: false },
+          { name: "Blood Pressure", value: "126/82", unit: "mmHg", range: "< 120/80", isAbnormal: false },
+          { name: "Serum Creatinine", value: 0.90, unit: "mg/dL", range: "0.6 - 1.2", isAbnormal: false },
         ];
       }
 
+      // 1. Instantly update live parameters on the spot
+      setLiveSystolic(extractedSystolic);
+      setLiveDiastolic(extractedDiastolic);
+      setLiveGlucose(extractedGlucose);
+      setLiveHr(extractedHr);
+
+      // 2. Add record and sync into user profile & twin
       addRecord({
         title: file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
-        category,
+        category: extractedCategory,
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         facility: "Clinical Diagnostic Laboratory",
         status: "VERIFIED",
         abnormalCount: extractedValues.filter((v) => v.isAbnormal).length,
         extractedValues,
-        aiSummary: `AI Optical OCR extracted ${extractedValues.length} biomarkers from ${file.name}. Condition reflected on living digital twin.`,
-        doctorQuestions: ["Are current lipid fractions within acceptable cardiovascular bounds?"],
+        aiSummary: `AI Optical OCR parsed ${extractedValues.length} biomarkers from ${file.name}. Patient parameters, organ status, and future predictions updated instantly.`,
+        doctorQuestions: ["Are these extracted values consistent with expected clinical trends?"],
       });
 
       setUploadStep("COMPLETE");
@@ -203,7 +250,7 @@ export default function DashboardPage() {
         setUploadedFile(null);
         setShowUploadModal(false);
       }, 700);
-    }, 1000);
+    }, 900);
   };
 
   return (
